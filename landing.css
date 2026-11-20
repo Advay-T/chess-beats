@@ -16,7 +16,7 @@
   --voice: #7fd3ff;        /* the white voice; the knight's mane */
   --voice-b: #ff9470;      /* the black voice */
 
-  --display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --display: "Excon", "Hanken Grotesk", system-ui, sans-serif; /* the wordmark's face, for headlines too */
   --mono: "Martian Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
   --body: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
 
@@ -63,10 +63,10 @@ a { color: inherit; }
 
 /* ---------- type ---------- */
 .display {
-  font-family: var(--display); font-weight: 400; color: var(--cream);
-  letter-spacing: -.01em; line-height: .98; margin: 0;
+  font-family: var(--display); font-weight: 500; color: var(--cream);
+  letter-spacing: -.03em; line-height: 1.02; margin: 0;
 }
-.display em { font-style: italic; color: var(--vu); }
+.display em { font-style: normal; color: var(--vu); } /* Excon has no italic: the accent is colour alone */
 .eyebrow {
   font: 500 12px/1.4 var(--mono); letter-spacing: .14em; text-transform: uppercase;
   color: var(--muted); margin: 0 0 18px;
@@ -235,23 +235,24 @@ a { color: inherit; }
 /* Wildcard: a mechanical tape counter in the corner, rolling with the moves */
 .counter {
   position: absolute; right: var(--pad); top: 96px;
-  display: grid; justify-items: end; gap: 6px; text-align: right;
+  display: grid; justify-items: end; gap: 10px; text-align: right;
   font-family: var(--mono); animation: fade-in 1s 1s both;
+  --digit: 34px; /* the counter's scale: everything below follows the digit size */
 }
-.counter-label { font-size: 10px; letter-spacing: .3em; text-transform: uppercase; color: var(--muted); }
+.counter-label { font-size: calc(var(--digit) * .36); letter-spacing: .3em; text-transform: uppercase; color: var(--muted); }
 .counter-digits {
-  display: inline-flex; gap: 3px; padding: 6px 8px; border-radius: 6px;
+  display: inline-flex; gap: calc(var(--digit) * .16); padding: calc(var(--digit) * .3) calc(var(--digit) * .36); border-radius: calc(var(--digit) * .3);
   background: linear-gradient(180deg, #1a120c, var(--walnut)); border: 1px solid var(--walnut-edge);
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, .6);
+  box-shadow: inset 0 3px 10px rgba(0, 0, 0, .65), 0 10px 30px rgba(0, 0, 0, .35);
 }
 .counter-digits b {
-  display: inline-block; width: 1.1em; padding: 2px 0; border-radius: 3px; text-align: center;
-  font: 500 18px/1.2 var(--mono); color: var(--cream);
+  display: inline-block; width: 1.1em; padding: .1em 0; border-radius: calc(var(--digit) * .14); text-align: center;
+  font: 500 var(--digit)/1.2 var(--mono); color: var(--cream);
   background: linear-gradient(180deg, #050505, #1c1c1c 50%, #050505);
 }
 .counter-digits b.roll { animation: roll .35s var(--ease-out); }
 @keyframes roll { from { transform: translateY(-45%); opacity: .2; } to { transform: none; opacity: 1; } }
-.counter-move { font-size: 12px; color: var(--vu); min-height: 1.4em; }
+.counter-move { font-size: calc(var(--digit) * .44); color: var(--vu); min-height: 1.4em; }
 
 /* ---------- notation tape (score sheet as a scrolling reel) ---------- */
 .tape {
@@ -267,7 +268,7 @@ a { color: inherit; }
 .tape-move {
   display: inline-flex; align-items: baseline; gap: 8px; padding: 18px 22px;
   border-right: 1px dashed var(--line);
-  font: 400 26px/1 var(--display); color: rgba(238, 227, 203, .55); white-space: nowrap;
+  font: 400 22px/1 var(--display); letter-spacing: -.01em; color: rgba(238, 227, 203, .55); white-space: nowrap;
   transition: color 300ms, text-shadow 300ms;
 }
 .tape-move small { font: 500 11px var(--mono); color: var(--muted); letter-spacing: .08em; }
@@ -322,7 +323,7 @@ a { color: inherit; }
   transition: height 420ms var(--ease-out);
 }
 .strip.hit .meter i { transition-duration: 60ms; }
-.strip h3 { margin: 0; font: 400 28px/1 var(--display); color: var(--cream); }
+.strip h3 { margin: 0; font: 500 24px/1.05 var(--display); letter-spacing: -.02em; color: var(--cream); }
 .strip p { margin: 0; font-size: 14px; line-height: 1.45; color: var(--muted); }
 .strip-read {
   min-width: 64px; padding: 6px 10px; border-radius: 6px;
@@ -380,7 +381,7 @@ a { color: inherit; }
 .stats > div { padding: 28px 28px 8px 0; }
 .stats > div + div { padding-left: 28px; border-left: 1px solid var(--line); }
 .stats dt { font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
-.stats dd { margin: 10px 0 8px; font: 400 clamp(64px, 9vw, 128px)/1 var(--display); color: var(--cream); font-variant-numeric: tabular-nums; }
+.stats dd { margin: 10px 0 8px; font: 500 clamp(56px, 8vw, 112px)/1 var(--display); letter-spacing: -.04em; color: var(--cream); font-variant-numeric: tabular-nums; }
 .stats p { margin: 0; color: var(--muted); font-size: 15px; }
 .library-note { max-width: 620px; color: var(--muted); margin: 0 0 28px; }
 
@@ -407,8 +408,8 @@ a { color: inherit; }
 @media (max-width: 640px) {
   .nav-links a:not(.btn) { display: none; }
   .brand-word { font-size: 20px; }
-  .counter { top: auto; bottom: 18px; right: 50%; translate: 50% 0; justify-items: center; text-align: center; position: absolute; }
-  .hero { padding-bottom: 110px; }
+  .counter { --digit: 24px; top: auto; bottom: 18px; right: 50%; translate: 50% 0; justify-items: center; text-align: center; position: absolute; }
+  .hero { padding-bottom: 140px; }
   .hero-stage { width: min(46vh, 80vw); }
   .vu { width: 116%; }
   .desk { grid-template-columns: repeat(2, 1fr); }

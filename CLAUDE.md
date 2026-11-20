@@ -8,7 +8,7 @@ famous games. The README holds the user-facing detail (sound tables, library cat
 
 - **Run:** open `index.html` (landing page) or `play.html` (player) in a browser. There is no build
   step and no server. Everything is plain scripts that also work from `file://`; only chess.js,
-  Tone.js and the landing page's fonts come from a CDN.
+  Tone.js, three.js and the fonts come from a CDN.
 - **Test:** `npm install` once, then `npm test` (note mapping, analysis, arrangement, PGN clean-up,
   and every library game replaying legally).
 - **Regenerate data:** `npm run build:library` after changing `data/pgn/`, `games.js` or
@@ -54,8 +54,11 @@ famous games. The README holds the user-facing detail (sound tables, library cat
 - **Look:** a dark theme. Ground `#0e0f13`; the white voice is light blue `#7fd3ff`, the black voice
   coral `#ff9470`, tension amber `#ffb347`. Tokens live at the top of `style.css` and
   `landing.css`; use them rather than new hex values.
-- **Wordmark:** "Chess Beats" is Excon Regular (400) on every page (`.brand-word`), loaded from
-  Fontshare's CDN. Never commit the font files: the licence forbids copies on public servers or repos.
+- **Type: three families, each with one job.** Excon (Fontshare CDN): the wordmark at 400
+  (`.brand-word`, every page) and the landing headlines at 500. Hanken Grotesk: all text and UI.
+  Martian Mono: data and labels (the player's figures at `font-stretch: 87.5%`). Both from Google
+  Fonts, on every page. Don't add other faces. Never commit Excon's files: the licence forbids copies
+  on public servers or repos.
 - **Pieces are SVG** (`ChessPieces.use(code)` / `<use href="#pc-wK">`), never Unicode glyphs, which
   render differently on every OS.
 - **Transport buttons** are `data-sling="primary|secondary"` (enhanced by `sling.js`, which keeps

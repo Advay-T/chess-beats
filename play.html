@@ -12,9 +12,13 @@
     <link rel="icon" type="image/png" sizes="64x64" href="brand/favicon-64.png" />
     <link rel="apple-touch-icon" href="brand/apple-touch-icon.png" />
     <meta name="theme-color" content="#0e0f13" />
+    <!-- Three families site-wide: Excon (brand), Hanken Grotesk (text), Martian Mono (data). -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Martian+Mono:wdth,wght@75..112.5,400..700&display=swap" />
     <!-- Excon (the wordmark) from Fontshare's CDN: its licence allows that, but not public copies of the files. -->
     <link rel="preconnect" href="https://api.fontshare.com" />
-    <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=excon@400&display=swap" />
+    <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=excon@400,500&display=swap" />
     <link rel="stylesheet" href="style.css" />
     <!-- Pinned UMD builds: they define window.Chess / window.Tone and work when opened from file:// -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
@@ -29,14 +33,14 @@
         <a class="brand-link" href="index.html"><span class="brand-knight"><img class="brand-mark" src="brand/knight-mark@2x.png" width="48" height="48" alt="" /></span><span class="brand-word">Chess Beats</span></a>
       </h1>
       <nav class="album" aria-label="Game">
-        <a id="link-library" class="btn" href="games.html">▦ All games</a>
+        <a id="link-library" class="btn btn-library" href="games.html"><svg class="lib-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" width="16" height="16" stroke-width="2"><rect x="3.5" y="3.5" width="7" height="7" rx="1.8"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.8"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.8"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.8"/></svg>All games</a>
         <button
           id="btn-prev-game"
           class="btn btn-ghost icon"
           type="button"
           aria-label="Previous game"
         >
-          ◀
+          <svg class="game-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" width="18" height="18" stroke-width="2.2"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>
         </button>
         <p id="game-title" class="game-title" aria-live="polite"></p>
         <button
@@ -45,13 +49,16 @@
           type="button"
           aria-label="Next game"
         >
-          ▶
+          <svg class="game-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" width="18" height="18" stroke-width="2.2"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
         </button>
         <label
-          class="toggle"
+          class="switch"
+          id="auto-advance-switch"
           title="When a game ends, start the next one in this collection"
         >
-          <input type="checkbox" id="auto-advance" /> Auto-advance
+          <input type="checkbox" id="auto-advance" role="switch" />
+          <span class="switch-track" aria-hidden="true"><span class="switch-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" width="10" height="10" stroke-width="3"><path d="M5 12h13"/><path d="m13 7 5 5-5 5"/></svg></span></span>
+          Auto-advance
         </label>
       </nav>
       <div class="topbar-controls">

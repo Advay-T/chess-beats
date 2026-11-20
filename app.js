@@ -416,6 +416,7 @@
       // (closing chord is 3 beats; a mate's final hit has already played out).
       var next = neighbour(1);
       if (next && $("auto-advance").checked) {
+        $("auto-advance-switch").setAttribute("data-advancing", ""); // the switch shows the next game is queued
         state.advanceTimer = setTimeout(function () {
           loadEntry(next);
           play();
@@ -442,6 +443,7 @@
     clearTimeout(state.timer);
     clearTimeout(state.padTimer);
     clearTimeout(state.advanceTimer);
+    $("auto-advance-switch").removeAttribute("data-advancing");
     state.timer = null;
     ChessAudio.releaseBed();
     setPlayIcon(false);
@@ -548,6 +550,7 @@
     try { $("auto-advance").checked = localStorage.getItem(AUTO_KEY) === "1"; } catch (e) {}
     $("auto-advance").addEventListener("change", function (e) {
       try { localStorage.setItem(AUTO_KEY, e.target.checked ? "1" : "0"); } catch (err) {}
+      if (!e.target.checked) { clearTimeout(state.advanceTimer); $("auto-advance-switch").removeAttribute("data-advancing"); }
     });
 
     $("btn-play").addEventListener("click", togglePlay);
