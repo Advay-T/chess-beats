@@ -26,6 +26,12 @@
     <link rel="preconnect" href="https://api.fontshare.com" />
     <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=excon@400&display=swap" />
     <link rel="stylesheet" href="landing.css" />
+    <script type="importmap">
+      { "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      } }
+    </script>
     <script>
       // The player used to live at index.html: send old game and PGN links (?game=, ?pgn=) on to it.
       if (/[?&](game|pgn)=/.test(location.search)) location.replace("play.html" + location.search + location.hash);
@@ -79,16 +85,27 @@
             <text class="vu-label" x="300" y="318" text-anchor="middle">TENSION</text>
             <line class="vu-needle" id="vu-needle" x1="300" y1="96" x2="300" y2="34" />
           </svg>
-          <picture class="hero-knight">
-            <source srcset="brand/knight-720.webp" type="image/webp" />
-            <img
-              src="brand/knight-1024.png"
-              width="720"
-              height="720"
-              alt="The Chess Beats knight: a polished black chess knight whose mane is a row of glowing sound-wave bars"
-              fetchpriority="high"
-            />
-          </picture>
+          <div class="knight-float">
+            <picture class="hero-knight">
+              <source srcset="brand/knight-720.webp" type="image/webp" />
+              <img
+                src="brand/knight-1024.png"
+                width="720"
+                height="720"
+                alt="The Chess Beats knight: a polished black chess knight whose mane is a row of glowing sound-wave bars"
+                fetchpriority="high"
+              />
+            </picture>
+            <!-- The live 3D knight (landing-knight.js) fades in over the image once it's built: grab it to spin it. -->
+            <div
+              class="knight-live"
+              tabindex="0"
+              role="img"
+              aria-label="The Chess Beats knight. Drag, or use the arrow keys, to spin it."
+            >
+              <canvas></canvas>
+            </div>
+          </div>
           <div class="plinth" aria-hidden="true"></div>
         </div>
 
@@ -288,5 +305,15 @@
 
     <script src="background.js"></script>
     <script src="landing.js"></script>
+    <script src="knight3d.js"></script>
+    <script src="landing-knight.js"></script>
+    <script type="module">
+      // three.js is an ES module from the CDN; the knight scripts are classic so they also load from file://.
+      // If any of this fails, the hero image simply stays.
+      import * as THREE from "three";
+      import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+      import { MarchingCubes } from "three/addons/objects/MarchingCubes.js";
+      LandingKnight.start({ THREE, RoomEnvironment, MarchingCubes });
+    </script>
   </body>
 </html>

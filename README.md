@@ -79,6 +79,8 @@ Try the two built-in games back to back: the **Immortal Game** (1851) is a storm
 **Sound and visuals**
 - `audio.js`: Tone.js instruments, plus the iPhone fixes (plays with the silent switch on, resumes after the screen locks)
 - `background.js`: animated glass background (WebGL) on the landing page and the player. Its lit edges turn from cyan to amber as tension rises. The shader is adapted from GlassFold in [GradFlow](https://gradflow.meerbahadin.dev).
+- `knight3d.js`: the 3D knight itself (a sculpted distance field turned into a mesh), shared by the logo renderer and the landing page
+- `landing-knight.js`: the landing page's live knight: grab it to spin it, flick it, and it springs back home
 - `pieces.js`: the Cburnett chess pieces as SVG, so they look the same on every device
 - `sling.js`: the player's playback buttons: tap them, or pull one sideways and let go
 - `brand/`: the logo, favicons and iPhone home-screen icon (**generated** by `npm run build:logo`)
@@ -92,7 +94,7 @@ Try the two built-in games back to back: the **Immortal Game** (1851) is a storm
 - `tools/collections.js`: the list of collections, categories and quotas
 - `tools/fetch-pgnmentor.js`, `tools/pgn-select.js`, `tools/zip.js`: download PGN Mentor player files and pick the games
 - `tools/pgn-normalize.js`, `tools/build-library.js`: clean the PGNs and build `library.js`
-- `tools/logo/knight.html`, `tools/logo/render.mjs`: model the 3D knight logo and render `brand/` in headless Chrome
+- `tools/logo/knight.html`, `tools/logo/render.mjs`: frame the 3D knight from `knight3d.js` and render `brand/` in headless Chrome
 - `test/`: the tests run by `npm test`
 
 **For contributors**

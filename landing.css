@@ -166,12 +166,29 @@ a { color: inherit; }
   width: min(44vh, 440px, 86vw); aspect-ratio: 1;
   display: grid; place-items: center;
 }
-.hero-knight {
+.knight-float {
   position: relative; z-index: 2; width: 100%;
   filter: drop-shadow(0 30px 40px rgba(0, 0, 0, .55)) drop-shadow(0 0 60px rgba(127, 211, 255, calc(.08 + var(--tension) * .1)));
   animation: knight-in 1.3s var(--ease-out) both, float 7s ease-in-out 1.3s infinite;
 }
+.hero-knight { display: block; width: 100%; transition: opacity 250ms ease-out; }
 .hero-knight img { width: 100%; }
+/* The live knight covers the stage for input; its canvas overhangs by 15% each side (landing-knight.js
+   EXPAND = 1.3) so a swinging mane isn't clipped, and it ignores the pointer itself. */
+.knight-live {
+  position: absolute; inset: 0; z-index: 1;
+  cursor: grab; touch-action: pan-y; /* a sideways swipe spins it; a vertical one still scrolls the page */
+  -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+  border-radius: 50%; outline-offset: -8%;
+}
+.knight-live[data-grabbing] { cursor: grabbing; }
+.knight-live canvas {
+  position: absolute; left: -15%; top: -15%; width: 130%; height: 130%;
+  pointer-events: none; opacity: 0; transition: opacity 250ms ease-out;
+}
+.hero-stage[data-live] .knight-live canvas { opacity: 1; }
+.hero-stage[data-live] .hero-knight { opacity: 0; }
+.hero-stage:not([data-live]) .knight-live { cursor: auto; }
 @keyframes knight-in { from { opacity: 0; transform: translateY(24px) scale(.94); filter: blur(14px); } to { opacity: 1; transform: none; filter: blur(0); } }
 @keyframes float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -10px; } }
 .plinth {
