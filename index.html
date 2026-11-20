@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chess Music</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- Pinned UMD builds: they define window.Chess / window.Tone and work when opened from file:// -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+  <script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
+</head>
+<body>
+  <header>
+    <h1>♞ Chess Music</h1>
+    <p class="tagline">Every move is a note. Every game is a song.</p>
+  </header>
+
+  <main>
+    <section class="stage">
+      <div class="players">
+        <span id="black-name" class="player black">Black</span>
+      </div>
+      <div id="board" class="board" aria-label="Chess board"></div>
+      <div class="players">
+        <span id="white-name" class="player white">White</span>
+      </div>
+      <div id="now-playing" class="now-playing" aria-live="polite">Pick a game and press play.</div>
+
+      <div class="transport" role="group" aria-label="Playback">
+        <button id="btn-start" title="Back to start (Home)">⏮</button>
+        <button id="btn-back" title="Step back, silent (←)">◀</button>
+        <button id="btn-play" class="primary" title="Play / pause (Space)">▶</button>
+        <button id="btn-fwd" title="Step forward and play the note (→)">▶|</button>
+        <button id="btn-end" title="Jump to end (End)">⏭</button>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <div class="card">
+        <label for="game-select">Game</label>
+        <select id="game-select"></select>
+        <div id="game-info" class="game-info"></div>
+      </div>
+
+      <div class="card sound">
+        <div class="row">
+          <label for="tempo">Tempo <output id="tempo-out">120</output> BPM</label>
+          <input id="tempo" type="range" min="40" max="200" value="120" step="1" />
+        </div>
+        <div class="row two">
+          <div>
+            <label for="key-root">Key</label>
+            <select id="key-root">
+              <option>C</option><option>D</option><option>E</option><option>F</option>
+              <option>G</option><option>A</option><option value="Bb">B♭</option>
+            </select>
+          </div>
+          <div>
+            <label for="key-mode">Scale</label>
+            <select id="key-mode">
+              <option value="major">Major pentatonic</option>
+              <option value="minor">Minor pentatonic</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">Moves</h2>
+        <ol id="move-list" class="move-list"></ol>
+      </div>
+
+      <details class="card" id="pgn-card">
+        <summary>Load your own PGN</summary>
+        <textarea id="pgn-input" rows="7" placeholder="Paste a PGN here, e.g.&#10;1. e4 e5 2. Nf3 Nc6 3. Bb5 ..."></textarea>
+        <div class="row buttons">
+          <button id="btn-load">Load pasted PGN</button>
+          <label class="file-btn">Upload .pgn<input id="pgn-file" type="file" accept=".pgn,.txt,text/plain" /></label>
+        </div>
+        <div id="pgn-error" class="error" role="alert"></div>
+      </details>
+
+      <details class="card legend">
+        <summary>How moves become music</summary>
+        <ul>
+          <li><b>File</b> (a–h) → note in the pentatonic scale</li>
+          <li><b>Rank</b> (1–8) → octave (low to high)</li>
+          <li><b>White</b> = bright synth, left · <b>Black</b> = dark FM synth, right</li>
+          <li><b>Piece</b>: pawn short &amp; soft → queen long &amp; loud</li>
+          <li><b>Capture</b> = accent + snare · <b>Check</b> = cymbal</li>
+          <li><b>Castling</b> = chord · <b>Promotion</b> = rising run</li>
+          <li><b>Checkmate</b> = final big hit</li>
+        </ul>
+      </details>
+    </aside>
+  </main>
+
+  <script src="games.js"></script>
+  <script src="music.js"></script>
+  <script src="audio.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
