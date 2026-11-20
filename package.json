@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node test/music.test.js && node test/analysis.test.js && node test/arrangement.test.js && node test/pgn-normalize.test.js && node test/pgn-select.test.js && node test/library.test.js",
     "build:library": "node tools/build-library.js",
-    "fetch:pgnmentor": "node tools/fetch-pgnmentor.js"
+    "fetch:pgnmentor": "node tools/fetch-pgnmentor.js",
+    "build:logo": "node tools/logo/render.mjs"
   },
   "devDependencies": {
     "chess.js": "0.10.3"

@@ -1,3 +1,5 @@
+<p align="center"><img src="brand/knight-1024.png" width="180" alt="Chess Beats logo: a sculpted black knight whose mane is a row of glowing sound-wave bars" /></p>
+
 # Chess Beats
 
 Turn any chess game into music. Every move plays a note; captures, checks, castling, promotions and checkmate get their own sounds.

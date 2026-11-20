@@ -1,0 +1,392 @@
+<!doctype html>
+<!--
+  Chess Beats logo: a sculpted obsidian knight whose mane is a sound wave.
+  A build tool, not part of the app: tools/logo/render.mjs screenshots it into brand/*.png.
+  Params: ?size=1024  &frame=full|head  &bg=transparent|tile  &res=200 (sculpt grid)
+
+  The knight is a signed-distance sculpture: a hand-drawn profile inflated into a rounded volume,
+  a turned Staunton base, and nine sound-wave ridges for a mane, all joined with smooth unions so
+  every seam is filleted like carved stone. Marching cubes turns it into a smooth mesh.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Chess Beats knight</title>
+    <style>
+      html, body { margin: 0; background: transparent; overflow: hidden; }
+      #out { display: block; }
+    </style>
+    <script type="importmap">
+      { "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      } }
+    </script>
+  </head>
+  <body>
+    <canvas id="out"></canvas>
+    <script type="module">
+      import * as THREE from "three";
+      import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+      import { MarchingCubes } from "three/addons/objects/MarchingCubes.js";
+
+      const q = new URLSearchParams(location.search);
+      const SIZE = +q.get("size") || 1024;
+      const FRAME = q.get("frame") || "full";
+      const BG = q.get("bg") || "transparent";
+      const RES = +q.get("res") || 230;
+      const RENDER = Math.max(2048, SIZE * 4); // supersample, then step down for clean edges
+      const BLUE = 0x7fd3ff, CORAL = 0xff9470;
+
+      // ---------- sdf helpers ----------
+      const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+      const sstep = (v, a, b) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+      const smin = (a, b, k) => { const h = clamp(0.5 + 0.5 * (b - a) / k, 0, 1); return b * (1 - h) + a * h - k * h * (1 - h); };
+      const ssub = (a, b, k) => { const h = clamp(0.5 - 0.5 * (a + b) / k, 0, 1); return a * (1 - h) + -b * h + k * h * (1 - h); }; // carve b out of a
+      function roundCyl(r, y, ra, hh, rb) { // rounded cylinder on the y axis, centred at y = 0
+        const dx = r - (ra - rb), dy = Math.abs(y) - (hh - rb);
+        return Math.hypot(Math.max(dx, 0), Math.max(dy, 0)) + Math.min(Math.max(dx, dy), 0) - rb;
+      }
+      const torus = (r, y, R, t) => Math.hypot(r - R, y) - t;
+      function ellipsoid(px, py, pz, rx, ry, rz) {
+        const k0 = Math.hypot(px / rx, py / ry, pz / rz), k1 = Math.hypot(px / (rx * rx), py / (ry * ry), pz / (rz * rz));
+        return k1 === 0 ? -Math.min(rx, ry, rz) : (k0 * (k0 - 1)) / k1;
+      }
+
+      // ---------- the profile: a knight facing left, standing on the base (y = 0.64) ----------
+      const Y0 = 0.64;
+      const shape = new THREE.Shape();
+      shape.moveTo(-0.6, -0.34);
+      shape.bezierCurveTo(-0.82, 0.2, -0.62, 0.66, -0.66, 0.9);        // chest
+      shape.bezierCurveTo(-0.74, 1.04, -1.02, 1.02, -1.22, 1.1);      // throat to jaw
+      shape.bezierCurveTo(-1.44, 1.18, -1.5, 1.48, -1.4, 1.66);       // chin and muzzle
+      shape.bezierCurveTo(-1.3, 1.82, -1.08, 1.86, -0.88, 1.96);      // bridge of the nose
+      shape.bezierCurveTo(-0.66, 2.08, -0.46, 2.2, -0.34, 2.4);       // brow
+      shape.bezierCurveTo(-0.28, 2.52, -0.22, 2.68, -0.13, 2.76);     // front of the ear
+      shape.bezierCurveTo(-0.05, 2.66, 0.0, 2.55, 0.08, 2.46);        // back of the ear
+      shape.bezierCurveTo(0.42, 2.3, 0.62, 1.98, 0.66, 1.56);         // poll and crest
+      shape.bezierCurveTo(0.7, 1.1, 0.84, 0.5, 0.66, -0.34);           // back of the neck
+      shape.lineTo(-0.6, -0.34);
+      const poly = shape.getPoints(80).map((p) => [p.x, p.y + Y0]);
+
+      // 2D signed distance to the profile, baked on a grid (negative inside).
+      const G = { x0: -1.9, y0: 0.05, cell: 0.006 };
+      G.w = Math.ceil((1.3 - G.x0) / G.cell); G.h = Math.ceil((3.8 - G.y0) / G.cell);
+      const sdf2 = new Float32Array(G.w * G.h);
+      (function bake() {
+        const n = poly.length;
+        for (let j = 0; j < G.h; j++) {
+          const y = G.y0 + j * G.cell;
+          // crossings of this row with the outline, for the inside test
+          const xs = [];
+          for (let k = 0; k < n; k++) {
+            const [ax, ay] = poly[k], [bx, by] = poly[(k + 1) % n];
+            if ((ay > y) !== (by > y)) xs.push(ax + ((y - ay) / (by - ay)) * (bx - ax));
+          }
+          for (let i = 0; i < G.w; i++) {
+            const x = G.x0 + i * G.cell;
+            let d = Infinity;
+            for (let k = 0; k < n; k++) {
+              const [ax, ay] = poly[k], [bx, by] = poly[(k + 1) % n];
+              const ex = bx - ax, ey = by - ay, wx = x - ax, wy = y - ay;
+              const t = clamp((wx * ex + wy * ey) / (ex * ex + ey * ey || 1), 0, 1);
+              const dx = wx - ex * t, dy = wy - ey * t, dd = dx * dx + dy * dy;
+              if (dd < d) d = dd;
+            }
+            let inside = false;
+            for (const cx of xs) if (cx < x) inside = !inside;
+            sdf2[j * G.w + i] = inside ? -Math.sqrt(d) : Math.sqrt(d);
+          }
+        }
+      })();
+      // A light blur of the field softens corners (the ear tip, the medial-axis creases) like a sculptor's rasp.
+      (function blur(radius, passes) {
+        const tmp = new Float32Array(sdf2.length);
+        for (let p = 0; p < passes; p++) {
+          for (let j = 0; j < G.h; j++) { // rows
+            let acc = 0; const row = j * G.w;
+            for (let i = -radius; i <= radius; i++) acc += sdf2[row + clamp(i, 0, G.w - 1)];
+            for (let i = 0; i < G.w; i++) {
+              tmp[row + i] = acc / (2 * radius + 1);
+              acc += sdf2[row + clamp(i + radius + 1, 0, G.w - 1)] - sdf2[row + clamp(i - radius, 0, G.w - 1)];
+            }
+          }
+          for (let i = 0; i < G.w; i++) { // columns
+            let acc = 0;
+            for (let j = -radius; j <= radius; j++) acc += tmp[clamp(j, 0, G.h - 1) * G.w + i];
+            for (let j = 0; j < G.h; j++) {
+              sdf2[j * G.w + i] = acc / (2 * radius + 1);
+              acc += tmp[clamp(j + radius + 1, 0, G.h - 1) * G.w + i] - tmp[clamp(j - radius, 0, G.h - 1) * G.w + i];
+            }
+          }
+        }
+      })(5, 3);
+
+      // Catmull-Rom bicubic sampling: smooth slopes, so the shading shows no grid.
+      const cr = (p0, p1, p2, p3, t) => p1 + 0.5 * t * (p2 - p0 + t * (2 * p0 - 5 * p1 + 4 * p2 - p3 + t * (3 * (p1 - p2) + p3 - p0)));
+      const at = (i, j) => sdf2[clamp(j, 0, G.h - 1) * G.w + clamp(i, 0, G.w - 1)];
+      function prof(x, y) {
+        const fx = (x - G.x0) / G.cell, fy = (y - G.y0) / G.cell;
+        const i = Math.floor(fx), j = Math.floor(fy), tx = fx - i, ty = fy - j;
+        const row = (jj) => cr(at(i - 1, jj), at(i, jj), at(i + 1, jj), at(i + 2, jj), tx);
+        const v = cr(row(j - 1), row(j), row(j + 1), row(j + 2), ty);
+        const ox = Math.max(G.x0 - x, x - (G.x0 + G.w * G.cell), 0), oy = Math.max(G.y0 - y, y - (G.y0 + G.h * G.cell), 0);
+        return v + Math.hypot(ox, oy);
+      }
+
+      // Half-thickness of the head across the board: slim muzzle, full chest and cheek, thin ears.
+      function halfWidth(x, y) {
+        let h = 0.4;
+        h *= 1 - 0.36 * sstep(-x, 0.5, 1.35);
+        h *= 1 + 0.26 * (1 - sstep(y, 1.2, 2.0));
+        h *= 1 - 0.55 * sstep(y, 3.0, 3.45);
+        h += 0.07 * Math.exp(-((x + 0.45) ** 2 + (y - 2.45) ** 2) / 0.09); // cheek
+        return h;
+      }
+      const EDGE = 0.26; // how far in from the outline the side reaches full thickness
+      function headDome(x, y) { // the inflated half-thickness at (x, y), 0 outside
+        const d = prof(x, y);
+        if (d >= 0) return { d, h: 0 };
+        const t = Math.min(-d / EDGE, 1);
+        const crown = 0.8 + 0.2 * sstep(-d, 0.08, 0.6); // the side keeps curving toward its middle
+        return { d, h: halfWidth(x, y) * crown * Math.sqrt(1 - (1 - t) * (1 - t)) };
+      }
+      function head(x, y, z) {
+        const { d, h } = headDome(x, y);
+        if (d >= 0) return Math.hypot(d, z);
+        return Math.max(Math.abs(z) - h, d * 0.6);
+      }
+
+      // ---------- the sound-wave mane: equalizer bars out of the back of the neck ----------
+      // Horizontal bars stacked down the crest, their lengths tracing an audio waveform.
+      function backEdgeX(y) { // the profile's rear outline at height y
+        let best = -Infinity;
+        for (let k = 0; k < poly.length; k++) {
+          const [ax, ay] = poly[k], [bx, by] = poly[(k + 1) % poly.length];
+          if ((ay > y) !== (by > y)) best = Math.max(best, ax + ((y - ay) / (by - ay)) * (bx - ax));
+        }
+        return best;
+      }
+      const WAVE = [0.4, 0.68, 1.0, 0.76, 0.92, 0.58, 0.74, 0.44, 0.26];
+      const RIDGE_R = 0.064, RIDGE_FLAT = 1.9; // radius in the profile; wider across the neck
+      const BAR_TOP = 2.98, BAR_STEP = 0.166;
+      const ridges = WAVE.map((amp, i) => {
+        const y = BAR_TOP - i * BAR_STEP;
+        const xb = backEdgeX(y);
+        return { ax: xb - 0.22, ay: y, bx: xb + 0.1 + 0.5 * amp, by: y };
+      });
+      function ridgeAt(x, y, z, r) { // distance to a flattened capsule, and how far along it (0 root, 1 tip)
+        const ex = r.bx - r.ax, ey = r.by - r.ay, wx = x - r.ax, wy = y - r.ay;
+        const t = clamp((wx * ex + wy * ey) / (ex * ex + ey * ey), 0, 1);
+        return { d: Math.hypot(wx - ex * t, wy - ey * t, z / RIDGE_FLAT) - RIDGE_R, t };
+      }
+
+      // ---------- the base: a turned Staunton foot ----------
+      function base(x, y, z) {
+        const r = Math.hypot(x, z);
+        let d = roundCyl(r, y - 0.13, 1.24, 0.13, 0.09);                 // foot
+        d = smin(d, roundCyl(r, y - 0.33, 1.06, 0.08, 0.05), 0.05);     // step
+        d = smin(d, torus(r, y - 0.43, 0.93, 0.045), 0.03);             // bead
+        d = smin(d, roundCyl(r, y - 0.53, 0.84, 0.08, 0.05), 0.04);     // waist
+        d = smin(d, torus(r, y - 0.635, 0.82, 0.055), 0.03);            // collar
+        return d;
+      }
+
+      // Eye, nostril and mouth carved into the surface on both sides.
+      const EYE = [-0.5, 2.74], NOSE = [-1.28, 2.2], MOUTH = [[-1.44, 1.96], [-1.08, 1.86]];
+      const eyeZ = headDome(EYE[0], EYE[1]).h, noseZ = headDome(NOSE[0], NOSE[1]).h;
+
+      function knight(x, y, z) {
+        let d = head(x, y, z);
+        for (const r of ridges) d = smin(d, ridgeAt(x, y, z, r).d, 0.06);
+        const az = Math.abs(z);
+        d = ssub(d, ellipsoid(x - EYE[0], y - EYE[1], az - eyeZ, 0.14, 0.085, 0.09), 0.03);   // socket
+        d = smin(d, ellipsoid(x - EYE[0] + 0.01, y - EYE[1], az - eyeZ + 0.035, 0.075, 0.05, 0.05), 0.02); // eyeball
+        d = ssub(d, ellipsoid(x - NOSE[0], y - NOSE[1], az - noseZ, 0.06, 0.045, 0.05), 0.02);
+        { // mouth: a soft groove along the jaw line
+          const [[ax, ay], [bx, by]] = MOUTH, ex = bx - ax, ey = by - ay;
+          const t = clamp(((x - ax) * ex + (y - ay) * ey) / (ex * ex + ey * ey), 0, 1);
+          const mz = headDome(ax + ex * t, ay + ey * t).h;
+          d = ssub(d, Math.hypot(x - ax - ex * t, y - ay - ey * t, (az - mz) * 0.7) - 0.03, 0.03);
+        }
+        return smin(d, base(x, y, z), 0.16);
+      }
+
+      // ---------- sculpt: sample into marching cubes ----------
+      const C = new THREE.Vector3(-0.22, 1.82, 0), HS = 1.98; // the sculpt box: centre and half-size
+      const mcMat = new THREE.MeshBasicMaterial();
+      const mc = new MarchingCubes(RES, mcMat, false, false, 1400000);
+      mc.isolation = 0;
+      const field = mc.field, half = RES / 2;
+      for (let k = 0; k < RES; k++) {
+        const z = C.z + HS * (k - half) / half;
+        for (let j = 0; j < RES; j++) {
+          const y = C.y + HS * (j - half) / half;
+          for (let i = 0; i < RES; i++) {
+            const x = C.x + HS * (i - half) / half;
+            field[i + j * RES + k * RES * RES] = -knight(x, y, z) * 100; // positive inside
+          }
+        }
+      }
+      mc.update();
+
+      // Copy the surface into a plain mesh, in world units, with a glow weight on the mane's tips.
+      const count = mc.count;
+      const posW = new Float32Array(count * 3), glow = new Float32Array(count * 3);
+      const nrmW = new Float32Array(count * 3), E = 0.0035;
+      const grad = (x, y, z) => [
+        knight(x + E, y, z) - knight(x - E, y, z), knight(x, y + E, z) - knight(x, y - E, z), knight(x, y, z + E) - knight(x, y, z - E),
+      ];
+      for (let v = 0; v < count; v++) {
+        let x = C.x + mc.positionArray[v * 3] * HS, y = C.y + mc.positionArray[v * 3 + 1] * HS, z = C.z + mc.positionArray[v * 3 + 2] * HS;
+        // Two Newton steps onto the zero surface take out the marching-cubes stair-steps.
+        let gx = 0, gy = 0, gz = 1;
+        for (let it = 0; it < 2; it++) {
+          const f = knight(x, y, z);
+          [gx, gy, gz] = grad(x, y, z);
+          const g2 = gx * gx + gy * gy + gz * gz;
+          if (g2 < 1e-12) break;
+          const s2 = (f * 2 * E) / g2;
+          x -= gx * s2; y -= gy * s2; z -= gz * s2;
+        }
+        [gx, gy, gz] = grad(x, y, z);
+        const gl = Math.hypot(gx, gy, gz) || 1;
+        nrmW.set([gx / gl, gy / gl, gz / gl], v * 3);
+        posW.set([x, y, z], v * 3);
+        let g = 0;
+        for (const r of ridges) {
+          const { d, t } = ridgeAt(x, y, z, r);
+          if (d < 0.02) g = Math.max(g, sstep(t, 0.42, 1.02));
+        }
+        glow[v * 3] = g; glow[v * 3 + 1] = g; glow[v * 3 + 2] = g;
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(posW, 3));
+      geo.setAttribute("normal", new THREE.BufferAttribute(nrmW, 3));
+      geo.setAttribute("color", new THREE.BufferAttribute(glow, 3));
+
+      // ---------- look: polished obsidian, voice-blue glow at the mane's tips ----------
+      const obsidian = new THREE.MeshPhysicalMaterial({
+        color: 0x07080b, roughness: 0.2, metalness: 0,
+        clearcoat: 1, clearcoatRoughness: 0.06, specularIntensity: 1, ior: 1.55, vertexColors: true,
+      });
+      obsidian.onBeforeCompile = (sh) => {
+        sh.uniforms.glowColor = { value: new THREE.Color(BLUE) };
+        sh.fragmentShader = sh.fragmentShader
+          .replace("#include <common>", "#include <common>\nuniform vec3 glowColor;")
+          .replace("#include <color_fragment>", "") // the colour attribute drives the glow, not the albedo
+          .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\ntotalEmissiveRadiance += glowColor * pow(vColor.r, 1.6) * 1.9;");
+      };
+
+      const renderer = new THREE.WebGLRenderer({ canvas: document.createElement("canvas"), antialias: true, alpha: true, preserveDrawingBuffer: true });
+      renderer.setPixelRatio(1);
+      renderer.setSize(RENDER, RENDER, false);
+      renderer.setClearColor(0x000000, 0);
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.0;
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+      const scene = new THREE.Scene();
+      scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(renderer), 0.04).texture;
+      scene.environmentIntensity = 0.42;
+      const light = (c, i, x, y, z) => { const l = new THREE.DirectionalLight(c, i); l.position.set(x, y, z); scene.add(l); };
+      light(0xe6eeff, 1.6, -3, 5, 6);   // key softbox, front-left
+      light(0xffffff, 0.25, 5, 1, 5);   // fill
+      light(BLUE, 9.5, -6, 3, -2.5);    // rim, back-left: the white voice
+      light(CORAL, 6.5, 6, 2, -3.5);    // kicker, back-right: the black voice
+      light(0xffffff, 0.7, 0, 9, 0);    // top
+
+      const mesh = new THREE.Mesh(geo, obsidian);
+      const knightGroup = new THREE.Group();
+      knightGroup.add(mesh);
+      knightGroup.rotation.y = 0.34; // three-quarter: the face turned toward the viewer's left
+      scene.add(knightGroup);
+
+      // ---------- camera: frame the knight (or just its head) and fill the square ----------
+      const camera = new THREE.PerspectiveCamera(FRAME === "head" ? 16 : 22, 1, 0.1, 100);
+      if (FRAME === "head") camera.position.set(0.4, 3.2, 10);
+      else camera.position.set(0.3, 2.6, 11.5);
+      camera.lookAt(-0.2, FRAME === "head" ? 2.5 : 1.8, 0);
+      camera.updateMatrixWorld(true);
+      knightGroup.updateMatrixWorld(true);
+      (function fit(margin) {
+        let minX = 1, maxX = -1, minY = 1, maxY = -1;
+        const v = new THREE.Vector3(), cut = FRAME === "head" ? 1.75 : -Infinity;
+        for (let i = 0; i < count; i += 3) {
+          v.fromArray(posW, i * 3);
+          if (v.y < cut) continue;
+          v.applyMatrix4(knightGroup.matrixWorld).project(camera);
+          minX = Math.min(minX, v.x); maxX = Math.max(maxX, v.x); minY = Math.min(minY, v.y); maxY = Math.max(maxY, v.y);
+        }
+        const zoom = (1 - margin) / (Math.max(maxX - minX, maxY - minY) / 2);
+        const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+        camera.zoom = zoom;
+        camera.setViewOffset(RENDER, RENDER, (cx * zoom * RENDER) / 2, (-cy * zoom * RENDER) / 2, RENDER, RENDER);
+        camera.updateProjectionMatrix();
+      })(0.3); // loose: the crop below frames it on its visual centre
+
+      renderer.render(scene, camera);
+
+      // ---------- frame on the visual centre ----------
+      // The mane makes the bounding box lopsided, so centring the box pushes the knight off to one side.
+      // Measure the rendered pixels instead: centre on the opacity-weighted middle of the shape
+      // (the eye reads mass, not extremes) and size the square so nothing is cut.
+      const MARGIN = FRAME === "head" ? 0.07 : 0.06;
+      const A = 512, probe = document.createElement("canvas");
+      probe.width = probe.height = A;
+      const pc = probe.getContext("2d", { willReadFrequently: true });
+      pc.drawImage(renderer.domElement, 0, 0, A, A);
+      const px = pc.getImageData(0, 0, A, A).data;
+      let sum = 0, mx = 0, my = 0, x0 = A, x1 = 0, y0 = A, y1 = 0;
+      for (let y = 0; y < A; y++) for (let x = 0; x < A; x++) {
+        const a = px[(y * A + x) * 4 + 3] / 255;
+        if (a < 0.04) continue;
+        sum += a; mx += a * x; my += a * y;
+        if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+      }
+      mx /= sum; my /= sum;
+      // Horizontal: the mass centre. Vertical: halfway between the box centre and the mass centre,
+      // so a heavy base doesn't float the piece up.
+      const cxA = mx, cyA = ((y0 + y1) / 2 + my) / 2;
+      const halfA = Math.max(cxA - x0, x1 + 1 - cxA, cyA - y0, y1 + 1 - cyA) / (1 - MARGIN);
+      const k = RENDER / A, crop = { x: (cxA - halfA) * k, y: (cyA - halfA) * k, s: 2 * halfA * k };
+      const framed = document.createElement("canvas");
+      framed.width = framed.height = RENDER;
+      const fc = framed.getContext("2d");
+      fc.imageSmoothingQuality = "high";
+      fc.drawImage(renderer.domElement, crop.x, crop.y, crop.s, crop.s, 0, 0, RENDER, RENDER);
+
+      // ---------- step down to the output size ----------
+      let src = framed, w = RENDER;
+      while (w / 2 >= SIZE) {
+        const c = document.createElement("canvas");
+        c.width = c.height = w / 2;
+        const x = c.getContext("2d");
+        x.imageSmoothingQuality = "high";
+        x.drawImage(src, 0, 0, w / 2, w / 2);
+        src = c; w /= 2;
+      }
+      const out = document.getElementById("out");
+      out.width = out.height = SIZE;
+      const ctx = out.getContext("2d");
+      ctx.imageSmoothingQuality = "high";
+      if (BG === "tile") {
+        // The app's dark tile, for icons that must be opaque (the iOS home screen).
+        const g = ctx.createRadialGradient(SIZE * 0.35, SIZE * 0.25, 0, SIZE / 2, SIZE / 2, SIZE * 0.8);
+        g.addColorStop(0, "#1c2433"); g.addColorStop(1, "#0b0c10");
+        ctx.fillStyle = g; ctx.fillRect(0, 0, SIZE, SIZE);
+        const pad = SIZE * 0.1;
+        ctx.drawImage(src, pad, pad, SIZE - pad * 2, SIZE - pad * 2);
+      } else {
+        ctx.drawImage(src, 0, 0, SIZE, SIZE);
+      }
+      // render.mjs reads the finished PNG from the DOM (exact pixels at any size, even 32px).
+      const pre = document.createElement("pre");
+      pre.id = "png";
+      pre.textContent = out.toDataURL("image/png");
+      pre.style.display = "none";
+      document.body.appendChild(pre);
+      document.title = "ready";
+    </script>
+  </body>
+</html>
