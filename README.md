@@ -99,5 +99,6 @@ npm run build:library     # works offline from the committed files
 
 - **Fischer and Tal books:** game scores from [brianerdelyi/ChessPGN](https://github.com/brianerdelyi/ChessPGN), released under CC0. The books are Fischer, *My 60 Memorable Games* (Simon & Schuster, 1969) and Tal, *The Life and Games of Mikhail Tal* (RHM, 1976).
 - **Everything else:** the player files at [PGN Mentor](https://www.pgnmentor.com/files.html).
+- **Chess pieces:** the Cburnett set by Colin M.L. Burnett, [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/), taken from [lichess-org/lila](https://github.com/lichess-org/lila/tree/master/public/piece/cburnett) and bundled in `pieces.js`.
 
 Only moves and game headers are used, with no annotations. chessentials.com was also considered, but it blocks automated downloads, so none of its files are used.

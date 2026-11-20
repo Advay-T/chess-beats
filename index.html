@@ -1,219 +1,439 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Chess Beats</title>
-  <meta name="description" content="Play a chess game as music. Load a PGN and hear captures, checks and the shape of the game." />
-  <link rel="stylesheet" href="style.css" />
-  <!-- Pinned UMD builds: they define window.Chess / window.Tone and work when opened from file:// -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-  <script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
-</head>
-<body>
-  <a class="skip-link" href="#board-area">Skip to the board</a>
-  <canvas id="bg-glass" class="bg-glass" aria-hidden="true"></canvas>
-  <div class="bg-scrim" aria-hidden="true"></div>
-  <header class="topbar">
-    <h1 class="brand"><a href="index.html"><span class="brand-mark" aria-hidden="true">♞</span> Chess Beats</a></h1>
-    <nav class="album" aria-label="Game">
-      <a id="link-library" class="btn" href="games.html">▦ All games</a>
-      <button id="btn-prev-game" class="btn btn-ghost icon" type="button" aria-label="Previous game">◀</button>
-      <p id="game-title" class="game-title" aria-live="polite"></p>
-      <button id="btn-next-game" class="btn btn-ghost icon" type="button" aria-label="Next game">▶</button>
-      <label class="toggle" title="When a game ends, start the next one in this collection">
-        <input type="checkbox" id="auto-advance" /> Auto-advance
-      </label>
-    </nav>
-    <div class="topbar-controls">
-      <button id="btn-open-pgn" class="btn" type="button">Load a game</button>
-      <button id="btn-open-help" class="btn btn-ghost" type="button">How it works</button>
-    </div>
-  </header>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chess Beats</title>
+    <meta
+      name="description"
+      content="Play a chess game as music. Load a PGN and hear captures, checks and the shape of the game."
+    />
+    <link rel="stylesheet" href="style.css" />
+    <!-- Pinned UMD builds: they define window.Chess / window.Tone and work when opened from file:// -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#board-area">Skip to the board</a>
+    <canvas id="bg-glass" class="bg-glass" aria-hidden="true"></canvas>
+    <div class="bg-scrim" aria-hidden="true"></div>
+    <header class="topbar">
+      <h1 class="brand">
+        <a href="index.html"
+          ><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 45 45" width="24" height="24" focusable="false"><use href="#pc-bN"/></svg></span> Chess Beats</a
+        >
+      </h1>
+      <nav class="album" aria-label="Game">
+        <a id="link-library" class="btn" href="games.html">▦ All games</a>
+        <button
+          id="btn-prev-game"
+          class="btn btn-ghost icon"
+          type="button"
+          aria-label="Previous game"
+        >
+          ◀
+        </button>
+        <p id="game-title" class="game-title" aria-live="polite"></p>
+        <button
+          id="btn-next-game"
+          class="btn btn-ghost icon"
+          type="button"
+          aria-label="Next game"
+        >
+          ▶
+        </button>
+        <label
+          class="toggle"
+          title="When a game ends, start the next one in this collection"
+        >
+          <input type="checkbox" id="auto-advance" /> Auto-advance
+        </label>
+      </nav>
+      <div class="topbar-controls">
+        <button id="btn-open-pgn" class="btn" type="button">Load a game</button>
+        <button id="btn-open-help" class="btn btn-ghost" type="button">
+          How it works
+        </button>
+      </div>
+    </header>
 
-  <main class="layout">
-    <section class="stage" id="board-area" tabindex="-1" aria-label="Board and playback">
-      <div class="player-bar">
-        <span class="voice-dot black" aria-hidden="true"></span>
-        <span id="black-name" class="player">Black</span>
-        <span id="black-lead" class="lead"></span>
-      </div>
-      <div class="board-wrap">
-        <div id="board" class="board" aria-label="Chess board"></div>
-      </div>
-      <div class="player-bar">
-        <span class="voice-dot white" aria-hidden="true"></span>
-        <span id="white-name" class="player">White</span>
-        <span id="white-lead" class="lead"></span>
-      </div>
+    <main class="layout">
+      <section
+        class="stage"
+        id="board-area"
+        tabindex="-1"
+        aria-label="Board and playback"
+      >
+        <div class="player-bar">
+          <span class="voice-dot black" aria-hidden="true"></span>
+          <span id="black-name" class="player">Black</span>
+          <span id="black-lead" class="lead"></span>
+        </div>
+        <div class="board-wrap">
+          <div id="board" class="board" aria-label="Chess board"></div>
+        </div>
+        <div class="player-bar">
+          <span class="voice-dot white" aria-hidden="true"></span>
+          <span id="white-name" class="player">White</span>
+          <span id="white-lead" class="lead"></span>
+        </div>
 
-      <div class="timeline-block">
-        <canvas id="timeline" class="timeline" role="img"
-          aria-label="Game timeline. Click to jump to a move."
-          title="Click to jump to that move"></canvas>
-        <ul class="timeline-key" aria-label="Timeline key">
-          <li><i class="sw sw-phase"></i>Phase</li>
-          <li><i class="sw sw-tension"></i>Tension</li>
-          <li><i class="sw sw-material"></i>Material (up = White ahead)</li>
-          <li><i class="sw sw-capture"></i>Capture</li>
-          <li><i class="sw sw-check"></i>Check</li>
-        </ul>
-      </div>
+        <div class="timeline-block">
+          <canvas
+            id="timeline"
+            class="timeline"
+            role="img"
+            aria-label="Game timeline. Click to jump to a move."
+            title="Click to jump to that move"
+          ></canvas>
+          <ul class="timeline-key" aria-label="Timeline key">
+            <li><i class="sw sw-phase"></i>Phase</li>
+            <li><i class="sw sw-tension"></i>Tension</li>
+            <li><i class="sw sw-material"></i>Material (up = White ahead)</li>
+            <li><i class="sw sw-capture"></i>Capture</li>
+            <li><i class="sw sw-check"></i>Check</li>
+          </ul>
+        </div>
 
-      <div class="transport" role="group" aria-label="Playback">
-        <button id="btn-start" class="t-btn" aria-label="Back to start" title="Back to start (Home)">⏮</button>
-        <button id="btn-back" class="t-btn" aria-label="Step back, silent" title="Step back, silent (←)">◀</button>
-        <button id="btn-play" class="t-btn t-play" aria-label="Play or pause" title="Play / pause (Space)">▶</button>
-        <button id="btn-fwd" class="t-btn" aria-label="Step forward with sound" title="Step forward with sound (→)">▶|</button>
-        <button id="btn-end" class="t-btn" aria-label="Jump to end" title="Jump to end (End)">⏭</button>
-      </div>
-    </section>
+        <div class="transport" role="group" aria-label="Playback">
+          <button
+            id="btn-start"
+            class="t-btn"
+            type="button"
+            data-sling="secondary"
+            aria-label="Back to start"
+            title="Back to start (Home)"
+          >
+            <svg class="t-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6.5 6v12" stroke-width="2.2"/><path d="M18 6.5 9.5 12l8.5 5.5z" fill="currentColor" stroke-width="2"/></svg>
+          </button>
+          <button
+            id="btn-back"
+            class="t-btn"
+            type="button"
+            data-sling="secondary"
+            aria-label="Step back, silent"
+            title="Step back, silent (←)"
+          >
+            <svg class="t-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14.5 6 8.5 12l6 6" stroke-width="2.4"/></svg>
+          </button>
+          <button
+            id="btn-play"
+            class="t-btn t-play"
+            type="button"
+            data-sling="primary"
+            aria-label="Play"
+            title="Play / pause (Space)"
+          >
+            <svg data-icon="play" class="t-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8.5 5.8 18.5 12l-10 6.2z" fill="currentColor" stroke-width="2.2"/></svg><svg data-icon="pause" class="t-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="6.75" y="5.5" width="3.5" height="13" rx="1.2" fill="currentColor" stroke="none"/><rect x="13.75" y="5.5" width="3.5" height="13" rx="1.2" fill="currentColor" stroke="none"/></svg>
+          </button>
+          <button
+            id="btn-fwd"
+            class="t-btn"
+            type="button"
+            data-sling="secondary"
+            aria-label="Step forward with sound"
+            title="Step forward with sound (→)"
+          >
+            <svg class="t-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.5 6l6 6-6 6" stroke-width="2.4"/></svg>
+          </button>
+          <button
+            id="btn-end"
+            class="t-btn"
+            type="button"
+            data-sling="secondary"
+            aria-label="Jump to end"
+            title="Jump to end (End)"
+          >
+            <svg class="t-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17.5 6v12" stroke-width="2.2"/><path d="M6 6.5 14.5 12 6 17.5z" fill="currentColor" stroke-width="2"/></svg>
+          </button>
+        </div>
+      </section>
 
-    <aside class="rack" aria-label="Controls">
-      <section class="module now" aria-labelledby="now-title">
-        <h2 id="now-title" class="module-title">Now playing</h2>
-        <div class="now-move" id="now-move">Press ▶ or Space to play.</div>
-        <div class="now-notes" id="now-notes"></div>
-        <div class="chips" id="now-chips"></div>
-        <div class="now-row">
-          <div class="readout">
-            <span class="readout-label">Groove</span>
-            <div id="groove-meter" class="meter" role="meter" aria-label="Groove level" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0">
-              <i></i><i></i><i></i>
+      <aside class="rack" aria-label="Controls">
+        <section class="module now" aria-labelledby="now-title">
+          <h2 id="now-title" class="module-title">Now playing</h2>
+          <div class="now-move" id="now-move">Press ▶ or Space to play.</div>
+          <div class="now-notes" id="now-notes"></div>
+          <div class="chips" id="now-chips"></div>
+          <div class="now-row">
+            <div class="readout">
+              <span class="readout-label">Groove</span>
+              <div
+                id="groove-meter"
+                class="meter"
+                role="meter"
+                aria-label="Groove level"
+                aria-valuemin="0"
+                aria-valuemax="3"
+                aria-valuenow="0"
+              >
+                <i></i><i></i><i></i>
+              </div>
+            </div>
+            <div class="readout">
+              <span class="readout-label">Chord</span>
+              <span id="now-chord" class="readout-value">–</span>
+            </div>
+            <div class="readout">
+              <span class="readout-label">Material</span>
+              <span id="now-balance" class="readout-value">Even</span>
             </div>
           </div>
-          <div class="readout">
-            <span class="readout-label">Chord</span>
-            <span id="now-chord" class="readout-value">–</span>
+          <p id="now-playing" class="sr-only" aria-live="polite"></p>
+        </section>
+
+        <section class="module" aria-labelledby="layers-title">
+          <h2 id="layers-title" class="module-title">Layers</h2>
+          <div class="pads">
+            <label
+              class="pad"
+              title="Knights leap, long slides glide, long moves ring longer"
+            >
+              <span class="pad-row"
+                ><input type="checkbox" id="layer-motion" checked /><span
+                  class="pad-name"
+                  >Motion</span
+                ></span
+              ><span class="pad-hint">piece paths</span>
+            </label>
+            <label
+              class="pad"
+              title="Background chord follows who is ahead in material"
+            >
+              <span class="pad-row"
+                ><input type="checkbox" id="layer-harmony" checked /><span
+                  class="pad-name"
+                  >Harmony</span
+                ></span
+              ><span class="pad-hint">material</span>
+            </label>
+            <label class="pad" title="The beat gets busier as tension rises">
+              <span class="pad-row"
+                ><input type="checkbox" id="layer-groove" checked /><span
+                  class="pad-name"
+                  >Groove</span
+                ></span
+              ><span class="pad-hint">tension</span>
+            </label>
+            <label
+              class="pad"
+              title="Sparse opening, full middlegame, slower endgame with echo"
+            >
+              <span class="pad-row"
+                ><input type="checkbox" id="layer-phase" checked /><span
+                  class="pad-name"
+                  >Phase</span
+                ></span
+              ><span class="pad-hint">opening → end</span>
+            </label>
           </div>
-          <div class="readout">
-            <span class="readout-label">Material</span>
-            <span id="now-balance" class="readout-value">Even</span>
+        </section>
+
+        <section class="module" aria-labelledby="sound-title">
+          <h2 id="sound-title" class="module-title">Sound</h2>
+          <div id="game-profile" class="chips profile"></div>
+          <div class="tempo">
+            <label for="tempo" class="field-label">Tempo</label>
+            <output id="tempo-out" for="tempo" class="bpm">200</output
+            ><span class="bpm-unit">BPM</span>
+            <input
+              id="tempo"
+              type="range"
+              min="40"
+              max="300"
+              value="200"
+              step="1"
+            />
           </div>
-        </div>
-        <p id="now-playing" class="sr-only" aria-live="polite"></p>
-      </section>
-
-      <section class="module" aria-labelledby="layers-title">
-        <h2 id="layers-title" class="module-title">Layers</h2>
-        <div class="pads">
-          <label class="pad" title="Knights leap, long slides glide, long moves ring longer">
-            <span class="pad-row"><input type="checkbox" id="layer-motion" checked /><span class="pad-name">Motion</span></span><span class="pad-hint">piece paths</span>
-          </label>
-          <label class="pad" title="Background chord follows who is ahead in material">
-            <span class="pad-row"><input type="checkbox" id="layer-harmony" checked /><span class="pad-name">Harmony</span></span><span class="pad-hint">material</span>
-          </label>
-          <label class="pad" title="The beat gets busier as tension rises">
-            <span class="pad-row"><input type="checkbox" id="layer-groove" checked /><span class="pad-name">Groove</span></span><span class="pad-hint">tension</span>
-          </label>
-          <label class="pad" title="Sparse opening, full middlegame, slower endgame with echo">
-            <span class="pad-row"><input type="checkbox" id="layer-phase" checked /><span class="pad-name">Phase</span></span><span class="pad-hint">opening → end</span>
-          </label>
-        </div>
-      </section>
-
-      <section class="module" aria-labelledby="sound-title">
-        <h2 id="sound-title" class="module-title">Sound</h2>
-        <div id="game-profile" class="chips profile"></div>
-        <div class="tempo">
-          <label for="tempo" class="field-label">Tempo</label>
-          <output id="tempo-out" for="tempo" class="bpm">200</output><span class="bpm-unit">BPM</span>
-          <input id="tempo" type="range" min="40" max="300" value="200" step="1" />
-        </div>
-        <div class="fields">
-          <div>
-            <label for="key-root" class="field-label">Key</label>
-            <select id="key-root">
-              <option value="auto" id="auto-root" selected>Auto</option>
-              <option>C</option><option>D</option><option>E</option><option>F</option>
-              <option>G</option><option>A</option><option value="Bb">B♭</option>
-            </select>
+          <div class="fields">
+            <div>
+              <label for="key-root" class="field-label">Key</label>
+              <select id="key-root">
+                <option value="auto" id="auto-root" selected>Auto</option>
+                <option>C</option>
+                <option>D</option>
+                <option>E</option>
+                <option>F</option>
+                <option>G</option>
+                <option>A</option>
+                <option value="Bb">B♭</option>
+              </select>
+            </div>
+            <div>
+              <label for="key-mode" class="field-label">Scale</label>
+              <select id="key-mode">
+                <option value="auto" id="auto-mode" selected>Auto</option>
+                <option value="major">Major pentatonic</option>
+                <option value="minor">Minor pentatonic</option>
+              </select>
+            </div>
           </div>
-          <div>
-            <label for="key-mode" class="field-label">Scale</label>
-            <select id="key-mode">
-              <option value="auto" id="auto-mode" selected>Auto</option>
-              <option value="major">Major pentatonic</option>
-              <option value="minor">Minor pentatonic</option>
-            </select>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      <section class="module moves" aria-labelledby="moves-title">
-        <h2 id="moves-title" class="module-title">Moves</h2>
-        <div id="game-info" class="game-info"></div>
-        <ol id="move-list" class="move-list"></ol>
-      </section>
-    </aside>
-  </main>
+        <section class="module moves" aria-labelledby="moves-title">
+          <h2 id="moves-title" class="module-title">Moves</h2>
+          <div id="game-info" class="game-info"></div>
+          <ol id="move-list" class="move-list"></ol>
+        </section>
+      </aside>
+    </main>
 
-  <dialog id="pgn-dialog" class="dialog" aria-labelledby="pgn-title">
-    <form method="dialog" class="dialog-head">
-      <h2 id="pgn-title">Load a PGN</h2>
-      <button class="btn btn-ghost icon" aria-label="Close">✕</button>
-    </form>
-    <p class="dialog-text">Paste a game, or upload a .pgn file exported from Lichess or Chess.com. If the file holds several games, the first one loads.</p>
-    <label for="pgn-input" class="field-label">PGN</label>
-    <textarea id="pgn-input" rows="8" placeholder="1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 ..."></textarea>
-    <div id="pgn-error" class="error" role="alert"></div>
-    <div class="dialog-actions">
-      <label class="btn file-btn">Upload .pgn<input id="pgn-file" type="file" accept=".pgn,.txt,text/plain" /></label>
-      <button id="btn-load" class="btn btn-primary" type="button">Load</button>
-    </div>
-  </dialog>
+    <dialog id="pgn-dialog" class="dialog" aria-labelledby="pgn-title">
+      <form method="dialog" class="dialog-head">
+        <h2 id="pgn-title">Load a PGN</h2>
+        <button class="btn btn-ghost icon" aria-label="Close">✕</button>
+      </form>
+      <p class="dialog-text">
+        Paste a game, or upload a .pgn file exported from Lichess or Chess.com.
+        If the file holds several games, the first one loads.
+      </p>
+      <label for="pgn-input" class="field-label">PGN</label>
+      <textarea
+        id="pgn-input"
+        rows="8"
+        placeholder="1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 ..."
+      ></textarea>
+      <div id="pgn-error" class="error" role="alert"></div>
+      <div class="dialog-actions">
+        <label class="btn file-btn"
+          >Upload .pgn<input
+            id="pgn-file"
+            type="file"
+            accept=".pgn,.txt,text/plain"
+        /></label>
+        <button id="btn-load" class="btn btn-primary" type="button">
+          Load
+        </button>
+      </div>
+    </dialog>
 
-  <dialog id="help-dialog" class="dialog dialog-wide" aria-labelledby="help-title">
-    <form method="dialog" class="dialog-head">
-      <h2 id="help-title">How it works</h2>
-      <button class="btn btn-ghost icon" aria-label="Close">✕</button>
-    </form>
-    <div class="help-grid">
-      <section>
-        <h3>Each move</h3>
-        <table>
-          <tr><th>File a–h</th><td>Note in the pentatonic scale</td></tr>
-          <tr><th>Rank 1–8</th><td>Octave, low to high</td></tr>
-          <tr><th>Side</th><td><span class="c-white">White</span>: bright synth, left. <span class="c-black">Black</span>: darker FM synth, right.</td></tr>
-          <tr><th>Piece</th><td>A pawn plays short and soft, a queen long and loud</td></tr>
-        </table>
-      </section>
-      <section>
-        <h3>Special moves</h3>
-        <table>
-          <tr><th>Capture</th><td>Accent and snare</td></tr>
-          <tr><th>Check</th><td>Cymbal</td></tr>
-          <tr><th>Castling</th><td>Three-note chord</td></tr>
-          <tr><th>Promotion</th><td>Rising run</td></tr>
-          <tr><th>Checkmate</th><td>Low chord, kick and cymbal</td></tr>
-        </table>
-      </section>
-      <section>
-        <h3>Layers</h3>
-        <table>
-          <tr><th>Motion</th><td>Knights leap. Rooks, bishops and queens glide along moves of 3+ squares.</td></tr>
-          <tr><th>Harmony</th><td>The pad chord tracks material: open when level, major when White leads, minor when Black leads, tense after a swing of 3+.</td></tr>
-          <tr><th>Groove</th><td>Silence, then hi-hats, then kick and bass, then a full beat as captures and checks pile up.</td></tr>
-          <tr><th>Phase</th><td>The opening stays sparse. The middlegame gets everything. The endgame slows down and echoes.</td></tr>
-        </table>
-      </section>
-      <section>
-        <h3>Auto key</h3>
-        <p>Tactical games play in a minor key, positional games in major. The opening moves pick the key, so two games with the same opening share it. Every game starts at 200 BPM. Choose any key, scale or tempo to override.</p>
-        <h3>Timeline</h3>
-        <p>Background colour shows the phase, orange shows tension, and the white line shows material. Red ticks mark captures, yellow ticks mark checks. Click anywhere on it to jump.</p>
-      </section>
-    </div>
-    <p class="dialog-text keys">Keys: <kbd>Space</kbd> play/pause · <kbd>→</kbd> step with sound · <kbd>←</kbd> step back · <kbd>Home</kbd> / <kbd>End</kbd></p>
-  </dialog>
+    <dialog
+      id="help-dialog"
+      class="dialog dialog-wide"
+      aria-labelledby="help-title"
+    >
+      <form method="dialog" class="dialog-head">
+        <h2 id="help-title">How it works</h2>
+        <button class="btn btn-ghost icon" aria-label="Close">✕</button>
+      </form>
+      <div class="help-grid">
+        <section>
+          <h3>Each move</h3>
+          <table>
+            <tr>
+              <th>File a–h</th>
+              <td>Note in the pentatonic scale</td>
+            </tr>
+            <tr>
+              <th>Rank 1–8</th>
+              <td>Octave, low to high</td>
+            </tr>
+            <tr>
+              <th>Side</th>
+              <td>
+                <span class="c-white">White</span>: bright synth, left.
+                <span class="c-black">Black</span>: darker FM synth, right.
+              </td>
+            </tr>
+            <tr>
+              <th>Piece</th>
+              <td>A pawn plays short and soft, a queen long and loud</td>
+            </tr>
+          </table>
+        </section>
+        <section>
+          <h3>Special moves</h3>
+          <table>
+            <tr>
+              <th>Capture</th>
+              <td>Accent and snare</td>
+            </tr>
+            <tr>
+              <th>Check</th>
+              <td>Cymbal</td>
+            </tr>
+            <tr>
+              <th>Castling</th>
+              <td>Three-note chord</td>
+            </tr>
+            <tr>
+              <th>Promotion</th>
+              <td>Rising run</td>
+            </tr>
+            <tr>
+              <th>Checkmate</th>
+              <td>Low chord, kick and cymbal</td>
+            </tr>
+          </table>
+        </section>
+        <section>
+          <h3>Layers</h3>
+          <table>
+            <tr>
+              <th>Motion</th>
+              <td>
+                Knights leap. Rooks, bishops and queens glide along moves of 3+
+                squares.
+              </td>
+            </tr>
+            <tr>
+              <th>Harmony</th>
+              <td>
+                The pad chord tracks material: open when level, major when White
+                leads, minor when Black leads, tense after a swing of 3+.
+              </td>
+            </tr>
+            <tr>
+              <th>Groove</th>
+              <td>
+                Silence, then hi-hats, then kick and bass, then a full beat as
+                captures and checks pile up.
+              </td>
+            </tr>
+            <tr>
+              <th>Phase</th>
+              <td>
+                The opening stays sparse. The middlegame gets everything. The
+                endgame slows down and echoes.
+              </td>
+            </tr>
+          </table>
+        </section>
+        <section>
+          <h3>Auto key</h3>
+          <p>
+            Tactical games play in a minor key, positional games in major. The
+            opening moves pick the key, so two games with the same opening share
+            it. Every game starts at 200 BPM. Choose any key, scale or tempo to
+            override.
+          </p>
+          <h3>Timeline</h3>
+          <p>
+            Background colour shows the phase, orange shows tension, and the
+            white line shows material. Red ticks mark captures, yellow ticks
+            mark checks. Click anywhere on it to jump.
+          </p>
+        </section>
+      </div>
+      <p class="dialog-text keys">
+        Keys: <kbd>Space</kbd> play/pause · <kbd>→</kbd> step with sound ·
+        <kbd>←</kbd> step back · <kbd>Home</kbd> / <kbd>End</kbd>
+      </p>
+      <p class="dialog-text credit">
+        Chess pieces: Cburnett by Colin M.L. Burnett,
+        <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank" rel="noopener">CC BY-SA 3.0</a>.
+      </p>
+    </dialog>
 
-  <script src="background.js"></script>
-  <script src="library.js"></script>
-  <script src="pgn.js"></script>
-  <script src="music.js"></script>
-  <script src="analysis.js"></script>
-  <script src="arrangement.js"></script>
-  <script src="audio.js"></script>
-  <script src="app.js"></script>
-</body>
+    <script src="pieces.js"></script>
+    <script src="background.js"></script>
+    <script src="library.js"></script>
+    <script src="pgn.js"></script>
+    <script src="music.js"></script>
+    <script src="analysis.js"></script>
+    <script src="arrangement.js"></script>
+    <script src="audio.js"></script>
+    <script src="sling.js"></script>
+    <script src="app.js"></script>
+  </body>
 </html>

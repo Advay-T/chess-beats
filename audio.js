@@ -88,11 +88,67 @@
     };
   }
 
+  // ---------- iPhone / iPad ----------
+  // iOS files Web Audio as "ambient" sound, which the ring/silent switch mutes. Asking for the
+  // "playback" session (Safari 16.4+), or on older iOS playing a silent looping <audio> element,
+  // moves the page to media playback so it sounds like a video would. Both must start in a tap.
+  var keepAlive = null;
+  function claimPlayback() {
+    try {
+      if (navigator.audioSession && navigator.audioSession.type !== "playback") navigator.audioSession.type = "playback";
+    } catch (e) { /* not supported: fall through to the <audio> trick */ }
+    if (keepAlive || (navigator.audioSession && navigator.audioSession.type === "playback")) return;
+    keepAlive = document.createElement("audio");
+    keepAlive.setAttribute("playsinline", "");
+    keepAlive.setAttribute("aria-hidden", "true");
+    keepAlive.loop = true;
+    keepAlive.src = silentWav();
+    var p = keepAlive.play();
+    if (p && p.catch) p.catch(function () { keepAlive = null; }); // retry on the next tap
+  }
+  // Half a second of 8 kHz mono silence as a WAV data URI (no extra file to ship).
+  function silentWav() {
+    var n = 4000, buf = new ArrayBuffer(44 + n), v = new DataView(buf);
+    function str(o, s) { for (var i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); }
+    str(0, "RIFF"); v.setUint32(4, 36 + n, true); str(8, "WAVE"); str(12, "fmt ");
+    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true);
+    str(36, "data"); v.setUint32(40, n, true);
+    for (var i = 0; i < n; i++) v.setUint8(44 + i, 128); // 8-bit silence is the midpoint
+    var bytes = new Uint8Array(buf), bin = "";
+    for (var j = 0; j < bytes.length; j++) bin += String.fromCharCode(bytes[j]);
+    return "data:audio/wav;base64," + btoa(bin);
+  }
+
+  function running() { return Tone.context.state === "running"; }
+
+  // Wake the context if iOS suspended or interrupted it (screen lock, another app, a call).
+  // resume() only succeeds inside a tap on iOS, so it is also retried on the next tap or key.
+  function ensure() {
+    if (!ready || running()) return;
+    try {
+      var p = Tone.context.resume();
+      if (p && p.catch) p.catch(function () {});
+    } catch (e) { /* retried on the next gesture */ }
+  }
+  function onGesture() {
+    if (!ready) return;
+    if (!running()) ensure();
+    if (keepAlive && keepAlive.paused) { var p = keepAlive.play(); if (p && p.catch) p.catch(function () {}); }
+  }
+
   // Must be called from a user gesture (click / key press) - browsers block audio before that.
   function init() {
-    if (ready) return Promise.resolve();
+    claimPlayback();
+    if (ready && running()) return Promise.resolve();
     return Tone.start().then(function () {
-      if (!ready) { build(); ready = true; }
+      if (!ready) {
+        build();
+        ready = true;
+        document.addEventListener("pointerdown", onGesture, true);
+        document.addEventListener("keydown", onGesture, true);
+        document.addEventListener("visibilitychange", function () { if (!document.hidden) ensure(); });
+      }
     });
   }
 
@@ -159,5 +215,5 @@
     releaseBed();
   }
 
-  root.ChessAudio = { init: init, playEvent: playEvent, playBed: playBed, releaseBed: releaseBed, stopAll: stopAll };
+  root.ChessAudio = { init: init, ensure: ensure, playEvent: playEvent, playBed: playBed, releaseBed: releaseBed, stopAll: stopAll };
 })(this);

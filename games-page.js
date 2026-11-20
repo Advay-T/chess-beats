@@ -3,8 +3,6 @@
 (function () {
   var $ = function (id) { return document.getElementById(id); };
   var LIB = window.GAME_LIBRARY;
-  var GLYPH = { k: "♚", q: "♛", r: "♜", b: "♝", n: "♞", p: "♟" };
-  var TEXT_STYLE = "︎"; // stops some systems rendering ♟ as an emoji
   var PREVIEW_PLIES = 8;
   var DEFAULT_BPM = 200; // same starting tempo as the player
   var HASH_KEY = "chessBeats.libraryHash";
@@ -35,9 +33,8 @@
       var f = 0;
       row.split("").forEach(function (ch) {
         if (/\d/.test(ch)) { f += +ch; return; }
-        var white = ch === ch.toUpperCase();
-        out += '<text class="mini-pc ' + (white ? "w" : "b") + '" x="' + (f * 10 + 5) + '" y="' + (r * 10 + 8.6) + '">' +
-          GLYPH[ch.toLowerCase()] + TEXT_STYLE + "</text>";
+        // Square box, not a font baseline, so every piece sits centred on every OS.
+        out += '<use href="#pc-' + ChessPieces.codeFor(ch) + '" x="' + (f * 10 + 0.5) + '" y="' + (r * 10 + 0.5) + '" width="9" height="9"/>';
         f++;
       });
     });
@@ -257,6 +254,7 @@
         if (i >= end) { stopPreview(); return; }
         var move = game.moves[i];
         var ev = ChessMusic.moveToEvent(move, key, { motion: true });
+        ChessAudio.ensure();
         ChessAudio.playEvent(ev, bpm, Tone.now() + 0.03);
         setBoard(id, game.fens[i + 1], move);
         i++;

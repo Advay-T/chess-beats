@@ -124,7 +124,8 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 }
 @media (max-width: 600px) {
   .topbar { position: static; padding: var(--s3) var(--s4); gap: var(--s2); }
-  .brand-mark { width: 26px; height: 26px; font-size: 16px; }
+  .brand-mark { width: 26px; height: 26px; }
+  .brand-mark svg { width: 20px; height: 20px; }
   .album { flex-wrap: wrap; }
   .album .toggle { flex-basis: 100%; justify-content: center; min-height: 32px; }
   #btn-open-help { padding-inline: var(--s2); }
@@ -191,7 +192,6 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 .sq {
   position: relative;
   display: flex; align-items: center; justify-content: center;
-  font-size: clamp(26px, 6.4vw, 56px);
   line-height: 1;
 }
 .sq.light { background: var(--sq-light); }
@@ -202,9 +202,9 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 .sq.light .coord { color: #474b5c; }
 .sq.dark .coord { color: #ffffff; }
 
-.pc { position: relative; z-index: 2; }
-.pc.w { color: #f8f7f2; text-shadow: 0 0 1px #111, 0 1px 0 #222, 1px 0 0 #222, -1px 0 0 #222, 0 -1px 0 #222, 0 3px 4px rgba(0, 0, 0, .35); }
-.pc.b { color: #15161c; text-shadow: 0 0 1px #fff, 0 1px 0 rgba(255,255,255,.55), 1px 0 0 rgba(255,255,255,.55), -1px 0 0 rgba(255,255,255,.55), 0 -1px 0 rgba(255,255,255,.55), 0 3px 4px rgba(0, 0, 0, .3); }
+/* Pieces are SVG (pieces.js), so they size to the square and centre the same on every OS. */
+.pc { position: relative; z-index: 2; display: block; width: 90%; height: 90%; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .3)); }
+.pc-img { display: block; width: 100%; height: 100%; overflow: visible; }
 
 /* Last move, tinted in the mover's voice colour. */
 .sq.hl-w::after, .sq.hl-b::after { content: ""; position: absolute; inset: 0; z-index: 1; }
@@ -259,27 +259,90 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 .sw-check { width: 3px; height: 10px; background: var(--check); }
 
 /* ============ Transport ============ */
-.transport { display: flex; justify-content: center; align-items: center; gap: var(--s3); margin-top: var(--s3); }
-.t-btn {
-  width: 44px; height: 44px; border-radius: 50%;
-  display: grid; place-items: center;
-  font-size: var(--fs-md); color: var(--text);
-  background: var(--surface-2); border: 1px solid var(--line);
-  cursor: pointer;
+.transport { display: flex; justify-content: center; align-items: center; gap: var(--s5); margin-top: var(--s4); padding: var(--s2) 0; }
+
+/* Sling buttons (sling.js, a port of React Bits' SlingButton). Tap to use; pull sideways and let go to fire. */
+.sling-button {
+  --sl-size: 44px; --sl-svg: 70px;
+  --sl-pad: var(--surface-2); --sl-icon: var(--text); --sl-accent: var(--white-voice);
+  --sl-well: var(--surface); --sl-band: var(--line-strong);
+  --sl-stroke: 2.5px; --sl-dot: 6px;
+  --sl-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  position: relative; display: inline-block; flex: none;
+  width: var(--sl-size); height: var(--sl-size);
 }
-.t-btn:hover { background: var(--surface-3); border-color: var(--line-strong); }
-.t-play {
-  width: 64px; height: 64px; font-size: var(--fs-lg);
-  background: var(--white-voice);
-  border: 0; color: #0b1720;
-  box-shadow: 0 8px 24px rgba(127, 211, 255, .22);
+.sling-button__fx {
+  position: absolute; top: 50%; left: 50%;
+  width: var(--sl-svg); height: var(--sl-svg);
+  margin: calc(var(--sl-svg) / -2) 0 0 calc(var(--sl-svg) / -2);
+  overflow: visible; pointer-events: none; shape-rendering: geometricPrecision;
 }
-.t-play:hover { background: #a6e1ff; }
+.sling-button__well { fill: var(--sl-well); stroke: var(--line); stroke-width: 1; transition: fill 200ms ease; }
+.sling-button[data-sent] .sling-button__well { fill: var(--sl-accent); }
+.sling-button__band {
+  fill: none; stroke: var(--sl-band); stroke-width: var(--sl-stroke); stroke-linecap: round;
+  transition: stroke-width 160ms var(--sl-ease-out);
+}
+.sling-button[data-armed] .sling-button__band { stroke-width: calc(var(--sl-stroke) * 1.5); }
+.sling-button__band--hot { stroke: var(--sl-accent); }
+.sling-button__arc {
+  fill: none; stroke: var(--sl-accent); stroke-width: var(--sl-stroke); stroke-linecap: butt;
+  transition: stroke-width 160ms var(--sl-ease-out);
+}
+.sling-button[data-armed] .sling-button__arc { stroke-width: calc(var(--sl-stroke) * 1.5); }
+.sling-button__move { position: absolute; inset: 0; will-change: transform; }
+
+.sling-button__pad {
+  position: relative; display: block; width: 100%; height: 100%;
+  margin: 0; padding: 0; border: 0; border-radius: 50%; background: none;
+  color: inherit; font: inherit; cursor: grab;
+  touch-action: none; user-select: none; -webkit-user-select: none;
+  -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+}
+.sling-button__pad::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; }
+.sling-button__pad[data-held] { cursor: grabbing; }
+.sling-button__pad:disabled { cursor: not-allowed; opacity: .5; }
+.sling-button__pad:focus-visible { outline: none; }
+.sling-button__pad:focus-visible .sling-button__face { box-shadow: var(--focus); }
+
+.sling-button__face {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 100%; border-radius: 50%;
+  background: var(--sl-pad); color: var(--sl-icon);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 1px 2px rgba(0, 0, 0, .35);
+  transition: transform 160ms var(--sl-ease-out), background-color 160ms var(--sl-ease-out), box-shadow 160ms var(--sl-ease-out);
+}
+.t-play .sling-button__face {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 8px 24px rgba(127, 211, 255, .22);
+}
+.sling-button__pad[data-held] .sling-button__face { transform: scale(.97); }
+.sling-button__pad[data-armed] .sling-button__face { transform: scale(1.04); }
+@media (hover: hover) and (pointer: fine) {
+  .sling-button__pad:not([data-held]):not(:disabled):hover .sling-button__face { transform: scale(1.04); }
+  .t-btn:not(.t-play):hover .sling-button__face { background: var(--surface-3); }
+  .t-play:hover .sling-button__face { background: #a6e1ff; }
+}
+
+.sling-button__icon { display: inline-flex; will-change: transform; }
+.t-icon { display: block; }
+.t-play .t-icon[data-icon="pause"], .t-play[data-playing] .t-icon[data-icon="play"] { display: none; }
+.t-play[data-playing] .t-icon[data-icon="pause"] { display: block; }
+
+.sling-button__dot {
+  position: absolute; top: 50%; left: 50%;
+  width: var(--sl-dot); height: var(--sl-dot);
+  margin: calc(var(--sl-dot) / -2) 0 0 calc(var(--sl-dot) / -2);
+  border-radius: 50%; background: var(--sl-accent); opacity: 0; pointer-events: none;
+}
+.sling-button__sr {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
 @media (max-width: 600px) {
   .transport {
     position: sticky; bottom: 0; z-index: 5;
     margin: var(--s3) calc(-1 * var(--s4)) 0;
-    padding: var(--s3);
+    padding: var(--s4) var(--s3); gap: 14px;
     background: rgba(14, 15, 19, .92); backdrop-filter: blur(8px);
     border-top: 1px solid var(--line);
   }
@@ -417,6 +480,8 @@ input[type="range"] { width: 100%; accent-color: var(--white-voice); cursor: poi
 .c-white { color: var(--white-voice); }
 .c-black { color: var(--black-voice); }
 .keys { margin: var(--s5) 0 0; }
+.credit { margin: var(--s2) 0 0; font-size: var(--fs-xs); }
+.credit a { color: inherit; }
 kbd {
   font: var(--fs-xs) var(--mono); padding: 1px 6px; border-radius: 4px;
   background: var(--surface-3); border: 1px solid var(--line-strong); color: var(--text);
@@ -425,7 +490,7 @@ kbd {
 /* ============ Hover and press (taste-skill motion layer, CSS only) ============ */
 /* Buttons step up 1px on hover and sink 1px with a .985 press. Hover moves only for a fine pointer;
    keyboard focus gets the focus ring. Transform and colour only, never size. */
-.btn, .t-btn, .pad, .mv, .timeline {
+.btn, .pad, .mv, .timeline {
   transition:
     transform var(--m-out) var(--ease),
     background-color var(--m-out) var(--ease),
@@ -433,12 +498,12 @@ kbd {
     box-shadow var(--m-out) var(--ease);
 }
 @media (hover: hover) and (pointer: fine) {
-  .btn:hover, .t-btn:hover { transform: translateY(-1px); transition-duration: var(--m-in); }
+  .btn:hover { transform: translateY(-1px); transition-duration: var(--m-in); }
   .pad:hover { transform: translateY(-2px); transition-duration: var(--m-card); border-color: var(--line-strong); box-shadow: 0 10px 24px rgba(0, 0, 0, .1); }
   .pad:has(input:checked):hover { border-color: rgba(127, 211, 255, .7); }
   .timeline:hover { border-color: var(--line-strong); }
 }
-.btn:active, .t-btn:active { transform: translateY(1px) scale(.985); transition-duration: var(--m-press); }
+.btn:active { transform: translateY(1px) scale(.985); transition-duration: var(--m-press); }
 .pad:active { transform: translateY(0) scale(.985); transition-duration: var(--m-press); }
 
 /* ============ Reduced motion ============ */
@@ -446,4 +511,5 @@ kbd {
   *, *::before, *::after { animation: none !important; transition: none !important; }
   .pulse { display: none; }
   .board-wrap { box-shadow: 0 20px 40px rgba(0, 0, 0, .45); }
+  .sling-button__face { transform: none !important; }
 }

@@ -1,8 +1,6 @@
 // UI: board, PGN loading, move list, playback and the live "Now" readout.
 (function () {
   var $ = function (id) { return document.getElementById(id); };
-  var GLYPH = { k: "♚", q: "♛", r: "♜", b: "♝", n: "♞", p: "♟" };
-  var TEXT_STYLE = "︎"; // stops some systems rendering ♟ as an emoji
   var DEFAULT_BPM = 200; // starting tempo for every game (and the library previews)
 
   var state = {
@@ -93,7 +91,7 @@
         html += '<div class="' + cls + '" data-sq="' + sq + '">';
         if (pc) {
           var white = pc === pc.toUpperCase();
-          html += '<span class="pc ' + (white ? "w" : "b") + '">' + GLYPH[pc.toLowerCase()] + TEXT_STYLE + "</span>";
+          html += '<span class="pc ' + (white ? "w" : "b") + '">' + ChessPieces.use(ChessPieces.codeFor(pc)) + "</span>";
         }
         if (r === 7) html += '<span class="coord file">' + "abcdefgh"[f] + "</span>";
         if (f === 0) html += '<span class="coord rank">' + (8 - r) + "</span>";
@@ -121,7 +119,7 @@
       if (top < list.scrollTop) list.scrollTop = top - 8;
       else if (bottom > list.scrollTop + list.clientHeight) list.scrollTop = bottom - list.clientHeight + 8;
     }
-    $("btn-play").textContent = state.playing ? "⏸" : "▶";
+    setPlayIcon(state.playing);
     drawTimeline();
   }
 
@@ -425,6 +423,7 @@
       }
       return;
     }
+    ChessAudio.ensure(); // iOS may have suspended audio mid-game (lock screen, app switch)
     var ev = stepForward(true);
     state.timer = setTimeout(tick, (ev.length * 60000) / ev.tempo);
   }
@@ -445,7 +444,13 @@
     clearTimeout(state.advanceTimer);
     state.timer = null;
     ChessAudio.releaseBed();
-    $("btn-play").textContent = "▶";
+    setPlayIcon(false);
+  }
+  // The play button holds both icons; CSS shows the one matching data-playing.
+  function setPlayIcon(playing) {
+    var btn = $("btn-play");
+    btn.toggleAttribute("data-playing", playing);
+    btn.setAttribute("aria-label", playing ? "Pause" : "Play");
   }
   function togglePlay() { state.playing ? pause() : play(); }
 

@@ -62,9 +62,6 @@
 .mini { display: block; width: 100%; height: 100%; }
 .mini-hl.w { fill: rgba(127, 211, 255, .45); }
 .mini-hl.b { fill: rgba(255, 148, 112, .5); }
-.mini-pc { font-size: 9px; text-anchor: middle; paint-order: stroke; stroke-width: .5px; stroke-linejoin: round; }
-.mini-pc.w { fill: #f8f7f2; stroke: #222; }
-.mini-pc.b { fill: #15161c; stroke: rgba(255, 255, 255, .6); }
 
 .card-peak { margin: 6px 0 2px; font: var(--fs-xs) var(--mono); color: var(--muted); }
 .spark { display: block; width: 100%; height: 28px; margin-bottom: var(--s2); }
