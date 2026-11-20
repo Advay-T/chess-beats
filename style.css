@@ -101,7 +101,7 @@ textarea { width: 100%; padding: var(--s3); font-family: var(--mono); resize: ve
   backdrop-filter: blur(14px) saturate(1.2);
   position: sticky; top: 0; z-index: 10;
 }
-.brand { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -.01em; display: flex; align-items: center; gap: var(--s2); }
+.brand { margin: 0; display: flex; align-items: center; gap: var(--s2); }
 /* The sculpted knight (brand/, rendered by tools/logo). It sits a little into the wordmark's line height. */
 .brand-mark {
   display: block; width: 48px; height: 48px; margin: -8px 0 -8px -6px;
@@ -121,7 +121,10 @@ textarea { width: 100%; padding: var(--s3); font-family: var(--mono); resize: ve
   background: radial-gradient(closest-side, rgba(127, 211, 255, .55), transparent);
   opacity: 0; transition: opacity 240ms var(--ease);
 }
-.brand-word { position: relative; }
+.brand-word { /* the wordmark: Excon Regular, the same on every page (fonts from Fontshare's CDN) */
+  position: relative;
+  font: 400 24px/1 "Excon", system-ui, -apple-system, "Segoe UI", sans-serif; letter-spacing: .01em;
+}
 .brand-word::after {
   content: ""; position: absolute; left: 0; right: 0; bottom: -5px; height: 2px; border-radius: 2px;
   background: linear-gradient(90deg, rgb(127, 211, 255), var(--tension));
@@ -158,6 +161,7 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 @media (max-width: 600px) {
   .topbar { position: static; padding: var(--s3) var(--s4); gap: var(--s2); }
   .brand-mark { width: 38px; height: 38px; margin: -6px 0 -6px -4px; }
+  .brand-word { font-size: 20px; }
   .album { flex-wrap: wrap; }
   .album .toggle { flex-basis: 100%; justify-content: center; min-height: 32px; }
   #btn-open-help { padding-inline: var(--s2); }

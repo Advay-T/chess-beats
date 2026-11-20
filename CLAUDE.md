@@ -52,6 +52,8 @@ famous games. The README holds the user-facing detail (sound tables, library cat
 - **Look:** a dark theme. Ground `#0e0f13`; the white voice is light blue `#7fd3ff`, the black voice
   coral `#ff9470`, tension amber `#ffb347`. Tokens live at the top of `style.css` and
   `landing.css`; use them rather than new hex values.
+- **Wordmark:** "Chess Beats" is Excon Regular (400) on every page (`.brand-word`), loaded from
+  Fontshare's CDN. Never commit the font files: the licence forbids copies on public servers or repos.
 - **Pieces are SVG** (`ChessPieces.use(code)` / `<use href="#pc-wK">`), never Unicode glyphs, which
   render differently on every OS.
 - **Transport buttons** are `data-sling="primary|secondary"` (enhanced by `sling.js`, which keeps
@@ -72,6 +74,8 @@ famous games. The README holds the user-facing detail (sound tables, library cat
   `file://`). Upgrading either is a deliberate change, not a drive-by.
 - **Credits must stay:** Cburnett pieces (CC BY-SA 3.0, in the player's help dialog and the landing
   footer), the ChessPGN books (CC0), PGN Mentor, and GradFlow's GlassFold shader in `background.js`.
+- The landing page's mixing desk plays real sounds by loading Tone.js, `music.js` and `audio.js` on
+  demand (`landing.js`, `Sound`). Clicking a strip turns sound on; hovering plays only after that.
 - `landing.js` copies the Immortal Game's moves and tension sparkline so the landing page doesn't load
   the 1.4 MB library. If the analysis changes, refresh that sparkline from `library.js`.
 - Open work lives in `PLAN.md`.

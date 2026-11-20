@@ -22,6 +22,9 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=Martian+Mono:wght@400;500&display=swap"
     />
+    <!-- Excon (the wordmark) from Fontshare's CDN: its licence allows that, but not public copies of the files. -->
+    <link rel="preconnect" href="https://api.fontshare.com" />
+    <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=excon@400&display=swap" />
     <link rel="stylesheet" href="landing.css" />
     <script>
       // The player used to live at index.html: send old game and PGN links (?game=, ?pgn=) on to it.
@@ -124,6 +127,18 @@
               The square a piece lands on sets the pitch. The piece sets the length. Captures, checks and mates
               each have their own channel. Watch the strips light up as the Immortal Game plays above.
             </p>
+            <div class="sound-row">
+              <button class="sound-toggle" id="sound-toggle" type="button" aria-pressed="false">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path class="spk" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" />
+                  <path class="wave w1" d="M15.5 9.2a4 4 0 0 1 0 5.6" />
+                  <path class="wave w2" d="M18.3 6.6a7.6 7.6 0 0 1 0 10.8" />
+                  <path class="mute" d="M16 9.5l5 5m0-5-5 5" />
+                </svg>
+                <span>Sound off</span>
+              </button>
+              <p class="sound-hint" id="sound-hint">Click a channel to hear it. After that, just hover.</p>
+            </div>
           </header>
           <div class="desk" id="desk">
             <article class="strip" data-ch="file">

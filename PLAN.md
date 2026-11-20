@@ -8,7 +8,8 @@ they are done.
 - [ ] **iPhone audio.** Confirm the fixes in `audio.js` on a real iPhone:
   - with the ring/silent switch on, pressing play is audible;
   - after locking and unlocking (or switching apps) mid-game, sound comes back;
-  - the library's ▶ Preview plays.
+  - the library's ▶ Preview plays;
+  - the landing page's mixing desk: tap a channel, and it plays.
 
   If a case is still silent, note which one. The fallback (a silent looping `<audio>` element) may
   need adjusting.

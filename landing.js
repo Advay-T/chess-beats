@@ -89,6 +89,120 @@
     s.t = setTimeout(function () { s.el.classList.remove("hit"); s.el.style.setProperty("--lvl", 0.12); }, BEAT_MS * 0.6);
   }
 
+  // ---------- mixing-desk sound ----------
+  // Each strip plays a short demo through the player's own instruments (music.js + audio.js on Tone.js).
+  // Browsers only allow audio after a click or tap, so: clicking a strip turns sound on and plays it;
+  // after that, hovering a strip plays it too. The animated Immortal Game loop above stays silent.
+  var Sound = (function () {
+    var SCRIPTS = ["https://unpkg.com/tone@14.7.77/build/Tone.js", "music.js", "audio.js"]; // same pin as the player
+    var KEY = { root: "D", mode: "minor" }; // the Immortal Game's auto key
+    var BPM = 200;
+    var loading = null, on = false, pending = null, playingUntil = {};
+    var toggle = $("sound-toggle"), hint = $("sound-hint");
+
+    function load() { // Tone, then music.js, then audio.js, one after another
+      if (loading) return loading;
+      loading = SCRIPTS.reduce(function (p, src) {
+        return p.then(function () {
+          return new Promise(function (resolve, reject) {
+            var s = document.createElement("script");
+            s.src = src; s.onload = resolve; s.onerror = reject;
+            document.head.appendChild(s);
+          });
+        });
+      }, Promise.resolve());
+      loading.catch(function () { loading = null; }); // allow a retry (e.g. offline the first time)
+      return loading;
+    }
+    function ready() { return !!(window.Tone && window.ChessMusic && window.ChessAudio); }
+
+    function mv(san, from, to, piece, flags, color) {
+      return { san: san, from: from, to: to, piece: piece || "p", flags: flags || "n", color: color || "w" };
+    }
+    var file = "abcdefgh".split("");
+    var DEMOS = { // [move, beats until the next one]
+      file: file.map(function (f) { return [mv(f + "4", f + "3", f + "4"), 0.5]; }),
+      rank: ["2", "4", "6", "8"].map(function (r) { return [mv("e" + r, "e1", "e" + r), 1]; }),
+      piece: [[mv("e4", "e3", "e4", "p"), 0.75], [mv("Ne4", "f2", "e4", "n"), 1], [mv("Re4", "e1", "e4", "r"), 1.5], [mv("Qe4", "d3", "e4", "q"), 2]],
+      capture: [[mv("Nxe5", "g4", "e5", "n", "c"), 1]],
+      check: [[mv("Qh5+", "d1", "h5", "q"), 1]],
+      mate: [[mv("Be7#", "d6", "e7", "b"), 4]],
+    };
+
+    function play(ch) {
+      if (!ready() || !DEMOS[ch]) return;
+      var now = performance.now();
+      if (playingUntil[ch] > now) return; // still sounding: don't restart it
+      ChessAudio.ensure();
+      ChessAudio.stopAll();
+      playingUntil = {};
+      var spb = 60 / BPM, t = Tone.now() + 0.05, beats = 0;
+      DEMOS[ch].forEach(function (step, i) {
+        var ev = ChessMusic.moveToEvent(step[0], KEY, { motion: false });
+        ChessAudio.playEvent(ev, BPM, t + beats * spb);
+        // Light the strip in time with each note.
+        setTimeout(function () { hit(ch, ch === "mate" ? 1 : 0.45 + 0.5 * (i + 1) / DEMOS[ch].length, step[0].san); }, beats * spb * 1000);
+        beats += step[1];
+      });
+      playingUntil[ch] = now + beats * spb * 1000;
+    }
+
+    function setOn(v) {
+      on = v;
+      toggle.setAttribute("aria-pressed", String(v));
+      toggle.querySelector("span").textContent = v ? "Sound on" : "Sound off";
+      if (v) hint.hidden = true;
+      if (!v && ready()) ChessAudio.stopAll();
+    }
+
+    // Must run inside the click/tap/key handler: that's the gesture that unlocks audio (iOS too).
+    function unlockAndPlay(ch) {
+      setOn(true);
+      if (ready()) { ChessAudio.init().then(function () { if (ch) play(ch); }); return; }
+      pending = ch;
+      load().then(function () {
+        return ChessAudio.init(); // may need the next tap on iOS; audio.js resumes on it
+      }).then(function () {
+        if (on && pending) play(pending);
+        pending = null;
+      }).catch(function () { hint.hidden = false; hint.textContent = "Couldn't load sound. Check your connection."; });
+    }
+
+    // Load ahead of time once the desk is about a screen away, so the first click plays at once.
+    var desk = $("desk");
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(function (entries, io) {
+        if (entries[0].isIntersecting) {
+          io.disconnect();
+          (window.requestIdleCallback || setTimeout)(function () { load(); });
+        }
+      }, { rootMargin: "100% 0px" }).observe(desk);
+    }
+
+    var hoverTimer = 0;
+    Object.keys(strips).forEach(function (ch) {
+      var el = strips[ch].el, name = el.querySelector("h3").textContent;
+      el.setAttribute("role", "button");
+      el.setAttribute("tabindex", "0");
+      el.setAttribute("aria-label", "Play the " + name + " channel");
+      el.addEventListener("click", function () { if (on && ready()) play(ch); else unlockAndPlay(ch); });
+      el.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (on && ready()) play(ch); else unlockAndPlay(ch); }
+      });
+      // Hover plays only once sound is on, after a short pause so sweeping across the desk doesn't fire every strip.
+      el.addEventListener("pointerenter", function (e) {
+        if (e.pointerType !== "mouse" || !on) return;
+        clearTimeout(hoverTimer);
+        hoverTimer = setTimeout(function () { play(ch); }, 120);
+      });
+      el.addEventListener("pointerleave", function () { clearTimeout(hoverTimer); });
+    });
+    toggle.addEventListener("click", function () { if (on) setOn(false); else unlockAndPlay(null); });
+
+    return { play: play, isOn: function () { return on; } };
+  })();
+  window.__chessBeatsSound = Sound; // handy for debugging in the console
+
   // ---------- tape counter ----------
   var digits = $("counter-digits");
   function setCounter(n) {

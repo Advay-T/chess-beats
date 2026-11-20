@@ -111,7 +111,7 @@ a { color: inherit; }
   padding: 14px var(--pad);
   background: linear-gradient(180deg, rgba(14, 15, 19, .8), rgba(14, 15, 19, 0));
 }
-.nav-brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font: 400 26px/1 var(--display); color: var(--cream); }
+.nav-brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--cream); }
 /* Brand link: hover makes the knight rear up on its base, its mane glows, and the wordmark
    underlines in the two voice colours. Feedback for the home link: under 300ms, transform and
    opacity only, real pointers only; a press settles it back down. */
@@ -126,7 +126,10 @@ a { color: inherit; }
   background: radial-gradient(closest-side, rgba(127, 211, 255, .55), transparent);
   opacity: 0; transition: opacity 240ms var(--ease-out);
 }
-.brand-word { position: relative; }
+.brand-word { /* the wordmark: Excon Regular, the same on every page (fonts from Fontshare's CDN) */
+  position: relative;
+  font: 400 24px/1 "Excon", system-ui, -apple-system, "Segoe UI", sans-serif; letter-spacing: .01em;
+}
 .brand-word::after {
   content: ""; position: absolute; left: 0; right: 0; bottom: -5px; height: 2px; border-radius: 2px;
   background: linear-gradient(90deg, rgb(127, 211, 255), var(--vu));
@@ -310,6 +313,27 @@ a { color: inherit; }
   background: #08090c; border: 1px solid rgba(255, 179, 71, .18);
 }
 
+/* ---------- desk sound ---------- */
+.sound-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; margin-top: 26px; }
+.sound-toggle {
+  display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 16px 0 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: rgba(8, 9, 12, .6); color: var(--muted);
+  font: 500 12px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; cursor: pointer;
+  transition: color 180ms ease, border-color 180ms ease, transform 140ms var(--ease-out);
+}
+.sound-toggle svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.sound-toggle .spk { fill: currentColor; stroke: none; }
+.sound-toggle .wave { opacity: 0; }
+.sound-toggle[aria-pressed="true"] { color: var(--voice); border-color: rgba(127, 211, 255, .45); }
+.sound-toggle[aria-pressed="true"] .wave { opacity: 1; }
+.sound-toggle[aria-pressed="true"] .mute { opacity: 0; }
+.sound-toggle .wave, .sound-toggle .mute { transition: opacity 180ms ease; }
+@media (hover: hover) and (pointer: fine) { .sound-toggle:hover { color: var(--text); border-color: rgba(238, 227, 203, .35); } }
+.sound-toggle:active { transform: scale(.97); }
+.sound-hint { margin: 0; font: 400 13px var(--mono); color: var(--vu); }
+.strip { cursor: pointer; }
+.strip:focus-visible { outline: 2px solid var(--voice); outline-offset: 2px; }
+
 /* ---------- score sheet ---------- */
 .score-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(32px, 6vw, 88px); align-items: center; }
 .score-grid .section-head { margin: 0; }
@@ -365,6 +389,7 @@ a { color: inherit; }
 }
 @media (max-width: 640px) {
   .nav-links a:not(.btn) { display: none; }
+  .brand-word { font-size: 20px; }
   .counter { top: auto; bottom: 18px; right: 50%; translate: 50% 0; justify-items: center; text-align: center; position: absolute; }
   .hero { padding-bottom: 110px; }
   .hero-stage { width: min(46vh, 80vw); }
