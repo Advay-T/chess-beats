@@ -1,6 +1,6 @@
-// The landing page's knight, live: grab it to spin it on its base (a turntable), drag up or down to
-// tilt it, flick it to send it spinning. It slows with friction, then a spring brings it home to the
-// hero pose. The WebP render stays as the first paint and the fallback; this fades in over it once the
+// The landing page's knight, live: it turns slowly on its base (a turntable) all the time. Grab it to
+// spin it, drag up or down to tilt it, flick it to send it spinning; friction then eases it back to the
+// slow turn. With reduced motion it stands still, and after a drag a spring brings it home to the hero pose. The WebP render stays as the first paint and the fallback; this fades in over it once the
 // model has been built (knight3d.js, in time slices so the page stays responsive).
 // A classic script: index.html's inline module imports three.js and calls LandingKnight.start().
 (function (root) {
@@ -12,7 +12,8 @@
   var TILT_K = 0.006;          // rad of tilt per px dragged (mouse only)
   var TILT_MAX = 0.44;         // about 25°, approached with a rubber band
   var MAX_SPIN = 20;           // rad/s, cap on a flick
-  var FRICTION = 1.6;          // 1/s: spin decays as e^(−1.6 t)
+  var FRICTION = 1.6;          // 1/s: a flick decays toward the idle turn as e^(−1.6 t)
+  var IDLE_SPIN = 0.45;        // rad/s: the slow continuous turn, about 14s a revolution
   var HANDOFF = 0.9;           // rad/s: below this, the home spring takes over
   var HOME_K = 38, HOME_ZETA = 0.7;   // home spring: one gentle overshoot
   var TILT_SPRING_K = 90, TILT_ZETA = 0.55;
@@ -45,8 +46,8 @@
     camera.updateMatrixWorld(true);
 
     // ---------- state ----------
-    var S = { yaw: 0, vel: 0, tilt: 0, tiltVel: 0, mode: "rest", target: 0, live: false, buildMs: 0 };
-    var raf = 0, last = 0, visible = true, interacted = false;
+    var S = { yaw: 0, vel: 0, tilt: 0, tiltVel: 0, mode: "rest", target: 0, dir: 1, live: false, buildMs: 0 };
+    var raf = 0, last = 0, visible = true;
     root.__knight = S; // for checks in the console
 
     // ---------- build (in slices), then frame it exactly like the hero image ----------
@@ -68,7 +69,7 @@
             S.live = true;
             new ResizeObserver(function () { resize(); draw(); }).observe(stage);
             observeVisibility();
-            if (!reduced()) setTimeout(invite, 2500);
+            if (!reduced()) { S.mode = "spin"; wake(); } // starts at the hero pose and eases up to speed
           })
           .catch(function (e) { console.warn("Live knight unavailable, keeping the image:", e); });
       });
@@ -137,7 +138,7 @@
       last = now;
       var moving = integrate(dt);
       draw();
-      if (moving) raf = requestAnimationFrame(step);
+      if (moving && visible) raf = requestAnimationFrame(step);
     }
     function spring(x, v, target, k, zeta, dt) { // semi-implicit Euler, substepped for stiffness
       var c = 2 * zeta * Math.sqrt(k), n = 4, h = dt / n;
@@ -150,6 +151,14 @@
       // Tilt always springs back to upright.
       var t = spring(S.tilt, S.tiltVel, 0, TILT_SPRING_K, rm ? 1 : TILT_ZETA, dt);
       S.tilt = t[0]; S.tiltVel = t[1];
+      if (rm && S.mode === "spin") toHome(); // reduced motion switched on mid-spin: settle and stop
+      if (S.mode === "spin") {
+        // Friction pulls any flick back toward the slow turn, in the direction it was last sent.
+        var idle = S.dir * IDLE_SPIN;
+        S.vel = idle + (S.vel - idle) * Math.exp(-FRICTION * dt);
+        S.yaw = (S.yaw + S.vel * dt) % TAU; // whole turns don't matter; keep the number small
+        return true;
+      }
       if (S.mode === "coast") {
         S.vel *= Math.exp(-FRICTION * dt);
         S.yaw += S.vel * dt;
@@ -177,7 +186,6 @@
     var grip = null;
     live.addEventListener("pointerdown", function (e) {
       if (!S.live || (e.pointerType === "mouse" && e.button !== 0)) return;
-      interacted = true;
       grip = { id: e.pointerId, x: e.clientX, y: e.clientY, yaw0: S.yaw, mouse: e.pointerType === "mouse", hist: [] };
       S.mode = "drag"; S.vel = 0; S.tiltVel = 0;
       try { live.setPointerCapture(e.pointerId); } catch (err) {}
@@ -204,8 +212,11 @@
       grip = null;
       live.removeAttribute("data-grabbing");
       S.vel = Math.max(-MAX_SPIN, Math.min(MAX_SPIN, vel));
-      if (reduced()) S.vel = 0; // no inertia: ease straight home
-      if (Math.abs(S.vel) > HANDOFF) S.mode = "coast"; else toHome();
+      if (reduced()) { S.vel = 0; toHome(); } // no inertia: ease straight home
+      else {
+        if (Math.abs(S.vel) > HANDOFF) S.dir = S.vel > 0 ? 1 : -1; // a real flick sets the idle direction
+        S.mode = "spin";
+      }
       wake();
     }
     live.addEventListener("pointerup", function (e) { release(e, false); });
@@ -217,27 +228,16 @@
       var k = e.key;
       if (k === "ArrowLeft" || k === "ArrowRight") {
         e.preventDefault();
-        interacted = true;
-        S.vel += (k === "ArrowLeft" ? -1 : 1) * (reduced() ? 0 : 5);
         if (reduced()) { S.yaw += k === "ArrowLeft" ? -0.6 : 0.6; toHome(); }
-        else S.mode = "coast";
+        else { S.dir = k === "ArrowLeft" ? -1 : 1; S.vel += S.dir * 5; S.mode = "spin"; }
         wake();
       } else if (k === "ArrowUp" || k === "ArrowDown") {
         e.preventDefault();
         S.tiltVel += k === "ArrowUp" ? -2.4 : 2.4;
-        if (S.mode === "rest") toHome();
+        if (S.mode === "rest") toHome(); // (reduced motion only: otherwise it's always spinning)
         wake();
       }
     });
-
-    // One small wiggle, once, to show it can be turned.
-    function invite() {
-      if (interacted || reduced() || !visible) return;
-      S.vel = 1.1; // about ±10° through the home spring
-      toHome();
-      S.target = 0;
-      wake();
-    }
 
     // Pause when the hero is off-screen or the tab is hidden.
     function observeVisibility() {
