@@ -82,6 +82,35 @@ test("checkmate: final big hit (kick + cymbal, long)", () => {
   assert.ok(ev.length >= 4);
 });
 
+console.log("Motion melody (ctx.motion)");
+function motionFor(fen, san) {
+  return M.moveToEvent(new Chess(fen).move(san), C_MAJOR, { motion: true });
+}
+test("knight: grace note on the origin, then the destination", () => {
+  const ev = M.moveToEvent(new Chess().move("Nf3"), C_MAJOR, { motion: true });
+  assert.equal(ev.notes.length, 2);
+  assert.equal(ev.notes[0].midi, M.stepToMidi(M.squareToStep("g1"), C_MAJOR));
+  assert.equal(ev.notes[1].midi, M.stepToMidi(M.squareToStep("f3"), C_MAJOR));
+  assert.ok(ev.notes[1].time > ev.notes[0].time);
+});
+test("rook a1-a8: rising run ending on a8", () => {
+  const ev = motionFor("7k/8/8/8/8/8/8/R6K w - - 0 1", "Ra8+");
+  const melody = ev.notes.filter((n) => n.time < 1);
+  const ms = melody.map((n) => n.midi);
+  assert.ok(ms.length > 2);
+  for (let i = 1; i < ms.length; i++) assert.ok(ms[i] > ms[i - 1], "run must rise");
+  assert.equal(ms.at(-1), M.stepToMidi(M.squareToStep("a8"), C_MAJOR));
+});
+test("long moves ring longer than short ones", () => {
+  const long = motionFor("7k/8/8/8/8/8/8/R6K w - - 0 1", "Ra7").notes.at(-1).dur;
+  const short = motionFor("7k/8/8/8/8/8/8/R6K w - - 0 1", "Ra2").notes.at(-1).dur;
+  assert.ok(long > short);
+});
+test("one-square bishop move: a single note", () =>
+  assert.equal(motionFor("k7/8/8/8/8/8/8/2B4K w - - 0 1", "Bd2").notes.length, 1));
+test("pawns are unchanged by motion", () =>
+  assert.deepEqual(M.moveToEvent(new Chess().move("e4"), C_MAJOR, { motion: true }).notes, eventFor(["e4"]).notes));
+
 console.log("Built-in games");
 for (const g of GAMES) {
   test(`${g.id}: every move maps to a valid event`, () => {

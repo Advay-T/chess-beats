@@ -47,11 +47,46 @@
     return { midi: midi, name: midiToName(midi), time: time, dur: dur, vel: Math.min(1, vel) };
   }
 
+  // Squares travelled (king-move distance), e.g. a1-a8 = 7, g1-f3 = 2.
+  function distance(from, to) {
+    return Math.max(Math.abs(from.charCodeAt(0) - to.charCodeAt(0)), Math.abs(+from[1] - +to[1]));
+  }
+
+  var GRACE = 0.125; // knight grace note, beats
+  var GLIDE = 0.375; // sliding-piece run fits in this many beats before the target note
+  var MAX_RUN = 6;
+
+  // Melody shaped by how the piece moves: knights leap, long slides glide, long moves ring longer.
+  function motionNotes(move, key, p, vel) {
+    var from = squareToStep(move.from);
+    var to = squareToStep(move.to);
+    var dist = distance(move.from, move.to);
+    var dur = p.dur * (1 + dist / 8);
+
+    if (move.piece === "n") {
+      return [note(from, key, 0, GRACE, vel * 0.6), note(to, key, GRACE, dur, vel)];
+    }
+    if (/[rbq]/.test(move.piece) && dist >= 3 && from !== to) {
+      var dir = to > from ? 1 : -1;
+      var span = Math.abs(to - from);
+      var count = Math.min(span, MAX_RUN); // run notes before the target
+      var out = [];
+      for (var i = 0; i < count; i++) {
+        var s = from + dir * Math.round((i * span) / count);
+        out.push(note(s, key, (i * GLIDE) / count, GLIDE / count, vel * (0.4 + 0.3 * (i / count))));
+      }
+      out.push(note(to, key, GLIDE, dur, vel));
+      return out;
+    }
+    return [note(to, key, 0, move.piece === "p" || move.piece === "k" ? p.dur : dur, vel)];
+  }
+
   /**
    * Build the sound event for one move.
    * @param move  chess.js verbose move: {color, from, to, piece, san, flags, captured, promotion}
    * @param key   {root: "C".."Bb", mode: "major"|"minor"}
-   * @param ctx   {isCheck, isMate} - usually derived from the SAN
+   * @param ctx   {isCheck, isMate, motion} - check/mate are usually derived from the SAN;
+   *              motion = shape the melody by how the piece moves (off by default)
    */
   function moveToEvent(move, key, ctx) {
     ctx = ctx || {};
@@ -85,6 +120,8 @@
       ev.notes.push(note(step, key, 0.5, PIECES.q.dur, 1));
       ev.tags.push("promotion run");
       ev.length = 1.5;
+    } else if (ctx.motion) {
+      motionNotes(move, key, p, vel).forEach(function (n) { ev.notes.push(n); });
     } else {
       ev.notes.push(note(step, key, 0, p.dur, vel));
     }
@@ -143,6 +180,7 @@
     stepToMidi: stepToMidi,
     midiToName: midiToName,
     squareToStep: squareToStep,
+    distance: distance,
     moveToEvent: moveToEvent,
     endingEvent: endingEvent,
   };

@@ -4,7 +4,7 @@
   "private": true,
   "description": "Turn chess games into music. The app needs no build step; npm is only used for tests.",
   "scripts": {
-    "test": "node test/music.test.js"
+    "test": "node test/music.test.js && node test/analysis.test.js && node test/arrangement.test.js"
   },
   "devDependencies": {
     "chess.js": "0.10.3"
