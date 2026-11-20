@@ -2,7 +2,7 @@
 <!--
   Chess Beats logo: a sculpted obsidian knight whose mane is a sound wave.
   A build tool, not part of the app: tools/logo/render.mjs screenshots it into brand/*.png.
-  Params: ?size=1024  &frame=full|head  &bg=transparent|tile  &res=200 (sculpt grid)
+  Params: ?size=1024  &frame=full|head  &bg=transparent|tile  &format=png|webp  &res=230 (sculpt grid)
 
   The knight is a signed-distance sculpture: a hand-drawn profile inflated into a rounded volume,
   a turned Staunton base, and nine sound-wave ridges for a mane, all joined with smooth unions so
@@ -383,7 +383,7 @@
       // render.mjs reads the finished PNG from the DOM (exact pixels at any size, even 32px).
       const pre = document.createElement("pre");
       pre.id = "png";
-      pre.textContent = out.toDataURL("image/png");
+      pre.textContent = q.get("format") === "webp" ? out.toDataURL("image/webp", 0.9) : out.toDataURL("image/png");
       pre.style.display = "none";
       document.body.appendChild(pre);
       document.title = "ready";

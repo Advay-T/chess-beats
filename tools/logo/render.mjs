@@ -14,6 +14,7 @@ const page = pathToFileURL(join(here, "knight.html")).href;
 
 const OUTPUTS = [
   { file: "knight-1024.png", size: 1024, frame: "full", bg: "transparent" },
+  { file: "knight-720.webp", size: 720, frame: "full", bg: "transparent", format: "webp" }, // landing hero
   { file: "knight-mark@2x.png", size: 96, frame: "head", bg: "transparent" },
   { file: "favicon-64.png", size: 64, frame: "head", bg: "transparent" },
   { file: "favicon-32.png", size: 32, frame: "head", bg: "transparent" },
@@ -39,7 +40,7 @@ const only = process.argv[2];
 for (const o of OUTPUTS) {
   if (only && o.file !== only) continue;
   const profile = mkdtempSync(join(tmpdir(), "knight-logo-"));
-  const url = `${page}?size=${o.size}&frame=${o.frame}&bg=${o.bg}`;
+  const url = `${page}?size=${o.size}&frame=${o.frame}&bg=${o.bg}&format=${o.format || "png"}`;
   const r = spawnSync(chrome, [
     "--headless=new", "--no-first-run", "--no-default-browser-check",
     `--user-data-dir=${profile}`,
@@ -48,13 +49,13 @@ for (const o of OUTPUTS) {
     "--dump-dom", url,
   ], { encoding: "utf8", timeout: 300000, maxBuffer: 64 * 1024 * 1024 });
   rmSync(profile, { recursive: true, force: true });
-  const m = /data:image\/png;base64,([A-Za-z0-9+/=]+)/.exec(r.stdout || "");
+  const m = /data:image\/(?:png|webp);base64,([A-Za-z0-9+/=]+)/.exec(r.stdout || "");
   if (!m) {
     console.error(`FAIL ${o.file}: the page did not finish\n${r.stderr || r.error || ""}`);
     process.exitCode = 1;
     continue;
   }
-  const png = Buffer.from(m[1], "base64");
-  writeFileSync(join(outDir, o.file), png);
-  console.log(`ok   ${o.file}  ${o.size}px  ${(png.length / 1024).toFixed(1)} KB`);
+  const img = Buffer.from(m[1], "base64");
+  writeFileSync(join(outDir, o.file), img);
+  console.log(`ok   ${o.file}  ${o.size}px  ${(img.length / 1024).toFixed(1)} KB`);
 }
