@@ -1,11 +1,11 @@
-# ♞ Chess Beats
+# Chess Beats
 
 Turn any chess game into music. Every move plays a note; captures, checks, castling, promotions and checkmate get their own sounds.
 
 ## Using it
 
 1. Double-click `index.html` (any modern browser; needs internet the first time to load chess.js and Tone.js from a CDN).
-2. Click **▦ All games** to browse the library, or **Load a game** to paste a PGN or upload a `.pgn` file.
+2. Click **All games** to browse the library, or **Load a game** to paste a PGN or upload a `.pgn` file.
 3. Press **▶**. Change tempo, key, scale and layers any time, even while it plays.
 
 Keyboard: `Space` play/pause · `→` step forward (with sound) · `←` step back (silent) · `Home` / `End`.
