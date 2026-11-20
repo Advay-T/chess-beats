@@ -6,7 +6,7 @@
   var PREVIEW_PLIES = 8;
   var DEFAULT_BPM = 200; // same starting tempo as the player
   var HASH_KEY = "chessBeats.libraryHash";
-  var PENDING_KEY = "chessBeats.pendingPgn"; // read once by app.js on index.html?pgn=pending
+  var PENDING_KEY = "chessBeats.pendingPgn"; // read once by app.js on play.html?pgn=pending
 
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
@@ -80,7 +80,7 @@
       '<div class="card-board">' + boardSvg(g.peakFen, g.peakMove) + "</div>" +
       '<p class="card-peak">' + esc(moveLabel(g)) + "</p>" +
       sparkSvg(g) +
-      '<h3 class="card-title"><a class="card-link" href="index.html?game=' + g.id + '" aria-label="' + esc(aria) + '">' + esc(heading) + "</a></h3>" +
+      '<h3 class="card-title"><a class="card-link" href="play.html?game=' + g.id + '" aria-label="' + esc(aria) + '">' + esc(heading) + "</a></h3>" +
       '<p class="card-meta">' + esc(meta) + "</p>" +
       '<div class="card-tags">' +
         '<span class="res res-' + res[0] + '">' + res[1] + "</span>" +
@@ -328,7 +328,7 @@
         return;
       }
       stopPreview();
-      location.href = "index.html?pgn=pending";
+      location.href = "play.html?pgn=pending";
     };
     $("btn-open-pgn").addEventListener("click", function () {
       stopPreview();

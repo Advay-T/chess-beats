@@ -6,7 +6,7 @@ Turn any chess game into music. Every move plays a note; captures, checks, castl
 
 ## Using it
 
-1. Double-click `index.html` (any modern browser; needs internet the first time to load chess.js and Tone.js from a CDN).
+1. Double-click `index.html` for the landing page, or `play.html` to go straight to the player (any modern browser; needs internet the first time to load chess.js and Tone.js from a CDN).
 2. Click **All games** to browse the library, or **Load a game** to paste a PGN or upload a `.pgn` file.
 3. Press **▶**. Change tempo, key, scale and layers any time, even while it plays.
 
@@ -65,7 +65,8 @@ Try the two built-in games back to back: the **Immortal Game** (1851) is a storm
 
 ## Files
 
-- `index.html`, `style.css`: page and layout
+- `index.html`, `landing.css`, `landing.js`: landing page (silently plays the Immortal Game to animate the page)
+- `play.html`, `style.css`: the player page and layout
 - `app.js`: board, PGN loading, move list, playback
 - `music.js`: move → notes mapping, including the motion melody (pure logic)
 - `analysis.js`: whole-game pass: material, tension, phase, profile and auto key/tempo (pure logic)
