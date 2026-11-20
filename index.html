@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Chess Music</title>
+  <title>Chess Beats</title>
   <meta name="description" content="Play a chess game as music. Load a PGN and hear captures, checks and the shape of the game." />
   <link rel="stylesheet" href="style.css" />
   <!-- Pinned UMD builds: they define window.Chess / window.Tone and work when opened from file:// -->
@@ -15,10 +15,17 @@
   <canvas id="bg-glass" class="bg-glass" aria-hidden="true"></canvas>
   <div class="bg-scrim" aria-hidden="true"></div>
   <header class="topbar">
-    <h1 class="brand"><span class="brand-mark" aria-hidden="true">♞</span> Chess Music</h1>
+    <h1 class="brand"><a href="index.html"><span class="brand-mark" aria-hidden="true">♞</span> Chess Beats</a></h1>
+    <nav class="album" aria-label="Game">
+      <a id="link-library" class="btn" href="games.html">▦ All games</a>
+      <button id="btn-prev-game" class="btn btn-ghost icon" type="button" aria-label="Previous game">◀</button>
+      <p id="game-title" class="game-title" aria-live="polite"></p>
+      <button id="btn-next-game" class="btn btn-ghost icon" type="button" aria-label="Next game">▶</button>
+      <label class="toggle" title="When a game ends, start the next one in this collection">
+        <input type="checkbox" id="auto-advance" /> Auto-advance
+      </label>
+    </nav>
     <div class="topbar-controls">
-      <label class="topbar-label" for="game-select">Game</label>
-      <select id="game-select" class="game-select"></select>
       <button id="btn-open-pgn" class="btn" type="button">Load a game</button>
       <button id="btn-open-help" class="btn btn-ghost" type="button">How it works</button>
     </div>
@@ -110,8 +117,8 @@
         <div id="game-profile" class="chips profile"></div>
         <div class="tempo">
           <label for="tempo" class="field-label">Tempo</label>
-          <output id="tempo-out" for="tempo" class="bpm">120</output><span class="bpm-unit">BPM</span>
-          <input id="tempo" type="range" min="40" max="200" value="120" step="1" />
+          <output id="tempo-out" for="tempo" class="bpm">200</output><span class="bpm-unit">BPM</span>
+          <input id="tempo" type="range" min="40" max="300" value="200" step="1" />
         </div>
         <div class="fields">
           <div>
@@ -191,8 +198,8 @@
         </table>
       </section>
       <section>
-        <h3>Auto key and tempo</h3>
-        <p>Tactical games play in a minor key at 140 BPM, positional games in major at 90. The opening moves pick the key, so two games with the same opening share it. Choose any key, scale or tempo to override.</p>
+        <h3>Auto key</h3>
+        <p>Tactical games play in a minor key, positional games in major. The opening moves pick the key, so two games with the same opening share it. Every game starts at 200 BPM. Choose any key, scale or tempo to override.</p>
         <h3>Timeline</h3>
         <p>Background colour shows the phase, orange shows tension, and the white line shows material. Red ticks mark captures, yellow ticks mark checks. Click anywhere on it to jump.</p>
       </section>
@@ -201,7 +208,8 @@
   </dialog>
 
   <script src="background.js"></script>
-  <script src="games.js"></script>
+  <script src="library.js"></script>
+  <script src="pgn.js"></script>
   <script src="music.js"></script>
   <script src="analysis.js"></script>
   <script src="arrangement.js"></script>

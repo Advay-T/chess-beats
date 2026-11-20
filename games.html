@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Games · Chess Beats</title>
+  <meta name="description" content="Browse 1,000 famous chess games by every world champion and more, preview how they sound, and pick one to play as music." />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="games.css" />
+  <!-- Same pinned UMD builds as the player; used for the click-to-preview audio. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+  <script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#grid">Skip to the games</a>
+  <canvas id="bg-glass" class="bg-glass" aria-hidden="true"></canvas>
+  <div class="bg-scrim" aria-hidden="true"></div>
+  <header class="topbar">
+    <h1 class="brand"><a href="index.html"><span class="brand-mark" aria-hidden="true">♞</span> Chess Beats</a></h1>
+    <div class="topbar-controls">
+      <a class="btn" href="index.html">Back to the player</a>
+    </div>
+  </header>
+
+  <main class="lib">
+    <div class="lib-head">
+      <button id="btn-open-pgn" class="btn lib-load" type="button">Load your own game</button>
+      <h2 class="lib-title">Choose a game</h2>
+      <p class="lib-sub"><span id="lib-total">About 1,000</span> games from every world champion, plus legends and women's champions. Each board shows the game's most intense moment. The orange line is its tension, which is how busy the music gets.</p>
+    </div>
+
+    <form class="lib-tools" id="tools" role="search" aria-label="Filter games" onsubmit="return false">
+      <div class="seg" id="f-category" role="group" aria-label="Category"></div>
+      <input id="f-search" class="lib-search" type="search" placeholder="Search players, events, openings, years…" aria-label="Search games" autocomplete="off" />
+      <div class="lib-selects">
+        <label><span class="field-label">Player</span>
+          <select id="f-player"><option value="">All players</option></select>
+        </label>
+        <label><span class="field-label">Result</span>
+          <select id="f-result">
+            <option value="">Any</option>
+            <option value="1-0">White won</option>
+            <option value="0-1">Black won</option>
+            <option value="1/2-1/2">Draw</option>
+          </select>
+        </label>
+        <label><span class="field-label">Character</span>
+          <select id="f-profile">
+            <option value="">Any</option>
+            <option value="tactical">Tactical</option>
+            <option value="balanced">Balanced</option>
+            <option value="positional">Positional</option>
+          </select>
+        </label>
+        <label><span class="field-label">Decade</span>
+          <select id="f-decade"><option value="">Any</option></select>
+        </label>
+        <label><span class="field-label">Sort</span>
+          <select id="f-sort">
+            <option value="date">Oldest first</option>
+            <option value="drama">Most dramatic</option>
+            <option value="short">Shortest</option>
+            <option value="long">Longest</option>
+          </select>
+        </label>
+      </div>
+      <p id="count" class="lib-count" aria-live="polite"></p>
+    </form>
+
+    <div id="grid"></div>
+  </main>
+
+  <dialog id="pgn-dialog" class="dialog" aria-labelledby="pgn-title">
+    <form method="dialog" class="dialog-head">
+      <h2 id="pgn-title">Load a PGN</h2>
+      <button class="btn btn-ghost icon" aria-label="Close">✕</button>
+    </form>
+    <p class="dialog-text">Paste a game, or upload a .pgn file exported from Lichess or Chess.com. If the file holds several games, the first one loads. It opens in the player.</p>
+    <label for="pgn-input" class="field-label">PGN</label>
+    <textarea id="pgn-input" rows="8" placeholder="1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 ..."></textarea>
+    <div id="pgn-error" class="error" role="alert"></div>
+    <div class="dialog-actions">
+      <label class="btn file-btn">Upload .pgn<input id="pgn-file" type="file" accept=".pgn,.txt,text/plain" /></label>
+      <button id="btn-load" class="btn btn-primary" type="button">Load and play</button>
+    </div>
+  </dialog>
+
+  <!-- One shared checkerboard pattern for every mini-board. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <pattern id="mini-squares" width="20" height="20" patternUnits="userSpaceOnUse">
+        <rect width="20" height="20" style="fill: var(--sq-light)" />
+        <rect x="10" width="10" height="10" style="fill: var(--sq-dark)" />
+        <rect y="10" width="10" height="10" style="fill: var(--sq-dark)" />
+      </pattern>
+    </defs>
+  </svg>
+
+  <script src="background.js"></script>
+  <script src="library.js"></script>
+  <script src="analysis.js"></script>
+  <script src="pgn.js"></script>
+  <script src="music.js"></script>
+  <script src="audio.js"></script>
+  <script src="games-page.js"></script>
+</body>
+</html>

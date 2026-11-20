@@ -107,15 +107,26 @@ textarea { width: 100%; padding: var(--s3); font-family: var(--mono); resize: ve
   background: var(--white-voice); color: #0b1720; font-size: 20px;
 }
 .topbar-controls { display: flex; gap: var(--s2); align-items: center; flex-wrap: wrap; }
-.topbar-label { font-size: var(--fs-xs); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.game-select { width: auto; min-width: 230px; }
+.brand a { color: inherit; text-decoration: none; display: inherit; align-items: inherit; gap: inherit; }
+a.btn { display: inline-flex; align-items: center; text-decoration: none; }
+.btn:disabled { opacity: .35; cursor: default; pointer-events: none; }
+
+/* Album nav: All games · ◀ title ▶ · auto-advance */
+.album { display: flex; align-items: center; gap: var(--s2); flex: 1 1 420px; min-width: 0; justify-content: center; }
+.game-title { margin: 0; min-width: 0; max-width: 360px; text-align: center; line-height: 1.25; }
+.game-title b { display: block; font-size: var(--fs-md); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.game-title small { display: block; font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.toggle { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); color: var(--muted); cursor: pointer; white-space: nowrap; }
+.toggle input { accent-color: var(--white-voice); margin: 0; cursor: pointer; }
+@media (max-width: 900px) {
+  .album { order: 3; flex-basis: 100%; justify-content: space-between; }
+  .game-title { flex: 1; max-width: none; }
+}
 @media (max-width: 600px) {
   .topbar { position: static; padding: var(--s3) var(--s4); gap: var(--s2); }
   .brand-mark { width: 26px; height: 26px; font-size: 16px; }
-  .topbar-controls { width: 100%; display: grid; grid-template-columns: auto 1fr 1fr; align-items: center; }
-  .game-select { grid-column: 2 / 4; }
-  #btn-open-pgn { grid-column: 1 / 3; }
-  .game-select { min-width: 0; width: 100%; }
+  .album { flex-wrap: wrap; }
+  .album .toggle { flex-basis: 100%; justify-content: center; min-height: 32px; }
   #btn-open-help { padding-inline: var(--s2); }
 }
 @media (max-width: 600px) {
@@ -205,6 +216,12 @@ textarea { width: 100%; padding: var(--s3); font-family: var(--mono); resize: ve
 .sq.flash-check::before { background: var(--check); animation: flash .9s ease-out; }
 .sq.flash-mate::before { background: var(--capture); animation: flash 1.4s ease-out 3; }
 @keyframes flash { from { opacity: .85; } to { opacity: 0; } }
+/* Note flash: the destination square lights in the mover's voice colour and fades with the note,
+   settling into the last-move tint. Duration (--note-ms) is set per move from the note's length. */
+.sq.flash-note-w::before { background: var(--white-voice); }
+.sq.flash-note-b::before { background: var(--black-voice); }
+.sq.flash-note-w::before, .sq.flash-note-b::before { animation: flash-note var(--note-ms, 300ms) var(--ease); }
+@keyframes flash-note { from { opacity: .5; } to { opacity: 0; } }
 
 /* Note pulse: a ring that expands from the square a note was played on. */
 .pulse {

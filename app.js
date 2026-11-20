@@ -3,6 +3,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var GLYPH = { k: "♚", q: "♛", r: "♜", b: "♝", n: "♞", p: "♟" };
   var TEXT_STYLE = "︎"; // stops some systems rendering ♟ as an emoji
+  var DEFAULT_BPM = 200; // starting tempo for every game (and the library previews)
 
   var state = {
     game: null, // { headers, moves: [verbose], fens: [fen after 0..N plies], result, mate, analysis }
@@ -10,6 +11,8 @@
     playing: false,
     timer: null,
     padTimer: null,
+    advanceTimer: null,
+    entry: null, // the GAME_LIBRARY entry being played, or null for a pasted/uploaded PGN
   };
 
   function esc(s) {
@@ -23,28 +26,7 @@
 
   // ---------- PGN loading ----------
 
-  function parsePgn(text) {
-    var clean = String(text).replace(/\r\n?/g, "\n").trim();
-    if (!clean) throw new Error("The PGN is empty.");
-    // If the file holds several games, use the first one.
-    var first = clean.split(/\n\s*\n(?=\[Event )/)[0];
-
-    var chess = new Chess();
-    if (!chess.load_pgn(first, { sloppy: true })) {
-      throw new Error("Couldn't read that PGN. Check for typos or illegal moves.");
-    }
-    var headers = chess.header();
-    var moves = chess.history({ verbose: true });
-    if (!moves.length) throw new Error("That PGN has no moves.");
-
-    var replay = headers.FEN ? new Chess(headers.FEN) : new Chess();
-    var fens = [replay.fen()];
-    moves.forEach(function (m) { replay.move(m); fens.push(replay.fen()); });
-
-    var result = headers.Result && headers.Result !== "*" ? headers.Result : (first.match(/(1-0|0-1|1\/2-1\/2)\s*$/) || [])[1] || "*";
-    var analysis = ChessAnalysis.analyzeGame(moves, fens, result, Chess);
-    return { headers: headers, moves: moves, fens: fens, result: result, mate: replay.in_checkmate(), analysis: analysis };
-  }
+  var parsePgn = function (text) { return ChessPgn.parse(text); };
 
   function loadGame(text) {
     var game = parsePgn(text); // throws on bad input
@@ -59,8 +41,8 @@
     var a = game.analysis.auto;
     $("auto-root").textContent = "Auto (" + a.root.replace("b", "♭") + ")";
     $("auto-mode").textContent = "Auto (" + a.mode + ")";
-    $("tempo").value = a.bpm; // the game's own tempo; the slider can still override it
-    $("tempo-out").textContent = a.bpm;
+    $("tempo").value = DEFAULT_BPM; // every game starts here; the slider can still override it
+    $("tempo-out").textContent = DEFAULT_BPM;
     showProfile();
     renderMoveList();
     render();
@@ -255,6 +237,23 @@
     return flash;
   }
 
+  // Slide the piece now on `to` from `from`'s position (FLIP: the board is already rebuilt).
+  // WAAPI on transform runs on the compositor; the next render replaces the element, so nothing stacks.
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  var EASE = getComputedStyle(document.documentElement).getPropertyValue("--ease").trim();
+  function slidePiece(from, to, ms) {
+    var a = document.querySelector('.sq[data-sq="' + from + '"]');
+    var b = document.querySelector('.sq[data-sq="' + to + '"]');
+    var pc = b && b.querySelector(".pc");
+    if (!a || !pc || ms <= 0) return;
+    var ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+    pc.style.zIndex = 4; // above other squares' pieces and the pulse ring while travelling
+    pc.animate(
+      [{ transform: "translate(" + (ra.left - rb.left) + "px, " + (ra.top - rb.top) + "px)" }, { transform: "none" }],
+      { duration: ms, easing: EASE }
+    ).onfinish = function () { pc.style.zIndex = ""; };
+  }
+
   // Expanding ring on a square, in the mover's voice colour. Removes itself when done.
   function pulse(square, color, ms, faint) {
     var cell = document.querySelector('.sq[data-sq="' + square + '"]');
@@ -357,9 +356,25 @@
       ChessAudio.playEvent(ev, ev.tempo, t);
       ChessAudio.playBed(bed, ev.tempo, t);
     }
-    render(flashFor(move));
-
     var beatMs = 60000 / ev.tempo;
+    var flash = flashFor(move);
+    if (withSound && !flash[move.to]) flash[move.to] = "flash-note-" + move.color; // capture/check flashes win
+    render(flash);
+    if (flash[move.to] === "flash-note-" + move.color) {
+      // The flash fades with the note: short for a pawn's 16th, long for a queen's half note.
+      var noteMs = Math.round(Math.max(180, Math.min(600, ChessMusic.PIECES[move.piece].dur * beatMs)));
+      document.querySelector('.sq[data-sq="' + move.to + '"]').style.setProperty("--note-ms", noteMs + "ms");
+    }
+    // Slide only during auto-playback: keyboard and button steps stay instant.
+    if (state.playing && !reduceMotion.matches) {
+      var slideMs = Math.min(160, Math.round(ev.length * beatMs * 0.4));
+      slidePiece(move.from, move.to, slideMs);
+      if (/[kq]/.test(move.flags)) { // castling: the rook travels too
+        var rank = move.color === "w" ? "1" : "8", kside = move.flags.indexOf("k") >= 0;
+        slidePiece((kside ? "h" : "a") + rank, (kside ? "f" : "d") + rank, slideMs);
+      }
+    }
+
     var ringMs = Math.round(Math.max(350, Math.min(1400, ev.length * beatMs)));
     pulse(move.to, move.color, ringMs, false);
     if (ly.motion && (move.piece === "n" || (/[rbq]/.test(move.piece) && ChessMusic.distance(move.from, move.to) >= 3))) {
@@ -399,6 +414,15 @@
         showIdle("Game over: " + g.result + ". No mate, so a soft closing chord.", g.analysis.frames[g.moves.length - 1]);
       }
       pause();
+      // Album mode: roll into the next game once the ending has rung out
+      // (closing chord is 3 beats; a mate's final hit has already played out).
+      var next = neighbour(1);
+      if (next && $("auto-advance").checked) {
+        state.advanceTimer = setTimeout(function () {
+          loadEntry(next);
+          play();
+        }, (g.mate ? 1 : 4) * (60000 / bpm()));
+      }
       return;
     }
     var ev = stepForward(true);
@@ -418,6 +442,7 @@
     state.playing = false;
     clearTimeout(state.timer);
     clearTimeout(state.padTimer);
+    clearTimeout(state.advanceTimer);
     state.timer = null;
     ChessAudio.releaseBed();
     $("btn-play").textContent = "▶";
@@ -436,19 +461,42 @@
 
   // ---------- wiring ----------
 
-  function populateGames() {
-    var sel = $("game-select");
-    BUILTIN_GAMES.forEach(function (g) {
-      var o = document.createElement("option");
-      o.value = g.id;
-      o.textContent = g.title;
-      sel.appendChild(o);
-    });
-    var custom = document.createElement("option");
-    custom.value = "custom";
-    custom.textContent = "Your PGN";
-    custom.disabled = true;
-    sel.appendChild(custom);
+  // ---------- library / album mode ----------
+  // A collection plays like an album: Prev/Next walk it in chronological order (library.js is pre-sorted).
+
+  var LIB = window.GAME_LIBRARY || { collections: [], games: [] };
+  var AUTO_KEY = "chessBeats.autoAdvance";
+  var PENDING_KEY = "chessBeats.pendingPgn"; // set by games-page.js, read once on load
+
+  function collectionOf(entry) {
+    return LIB.collections.find(function (c) { return c.id === entry.collection; });
+  }
+  function neighbour(dir) {
+    if (!state.entry) return null;
+    var list = LIB.games.filter(function (g) { return g.collection === state.entry.collection; });
+    return list[list.indexOf(state.entry) + dir] || null;
+  }
+
+  function setTitle(main, sub) {
+    $("game-title").innerHTML = "<b>" + esc(main) + "</b>" + (sub ? " <small>" + esc(sub) + "</small>" : "");
+    document.title = main + " · Chess Beats";
+  }
+
+  function updateNav() {
+    var prev = neighbour(-1), next = neighbour(1);
+    $("btn-prev-game").disabled = !prev;
+    $("btn-next-game").disabled = !next;
+    $("btn-prev-game").title = prev ? "Previous: " + (prev.name || prev.title) : "No previous game";
+    $("btn-next-game").title = next ? "Next: " + (next.name || next.title) : "No next game";
+  }
+
+  function loadEntry(entry) {
+    loadGame(entry.pgn);
+    state.entry = entry;
+    var c = collectionOf(entry);
+    setTitle(entry.name || entry.title, [entry.name ? entry.title : "", entry.year, c && c.title].filter(Boolean).join(" · "));
+    updateNav();
+    history.replaceState(null, "", "?game=" + encodeURIComponent(entry.id));
   }
 
   function showError(msg) { $("pgn-error").textContent = msg || ""; }
@@ -457,9 +505,11 @@
     try {
       loadGame(text);
       showError("");
-      var sel = $("game-select");
-      sel.querySelector('option[value="custom"]').textContent = label || "Your PGN";
-      sel.value = "custom";
+      state.entry = null;
+      var h = state.game.headers;
+      setTitle(label || "Your PGN", [h.White, h.Black].filter(Boolean).join(" vs "));
+      updateNav();
+      history.replaceState(null, "", location.pathname);
       $("pgn-dialog").close();
     } catch (e) {
       showError(e.message);
@@ -471,13 +521,30 @@
       showIdle("Couldn't load chess.js or Tone.js. Check your internet connection and reload.");
       return;
     }
-    populateGames();
-    loadGame(BUILTIN_GAMES[0].pgn);
+    var params = new URLSearchParams(location.search);
+    var wanted = params.get("game");
+    var start = LIB.games.find(function (g) { return g.id === wanted; }) ||
+      LIB.games.find(function (g) { return g.collection === "classics"; }) || LIB.games[0];
+    // A PGN handed over from the games page ("Load your own game") wins over the default game.
+    var pending = null;
+    if (params.get("pgn") === "pending") {
+      try {
+        pending = JSON.parse(sessionStorage.getItem(PENDING_KEY) || "null");
+        sessionStorage.removeItem(PENDING_KEY);
+      } catch (e) {}
+    }
+    if (start) loadEntry(start);
+    if (pending && pending.text) loadCustom(pending.text, pending.label);
 
-    $("game-select").addEventListener("change", function (e) {
-      var g = BUILTIN_GAMES.find(function (x) { return x.id === e.target.value; });
-      if (g) { loadGame(g.pgn); showError(""); }
+    // Back to the grid with the filters it was left on.
+    try { $("link-library").href = "games.html" + (sessionStorage.getItem("chessBeats.libraryHash") || ""); } catch (e) {}
+    $("btn-prev-game").addEventListener("click", function () { var g = neighbour(-1); if (g) loadEntry(g); });
+    $("btn-next-game").addEventListener("click", function () { var g = neighbour(1); if (g) loadEntry(g); });
+    try { $("auto-advance").checked = localStorage.getItem(AUTO_KEY) === "1"; } catch (e) {}
+    $("auto-advance").addEventListener("change", function (e) {
+      try { localStorage.setItem(AUTO_KEY, e.target.checked ? "1" : "0"); } catch (err) {}
     });
+
     $("btn-play").addEventListener("click", togglePlay);
     $("btn-fwd").addEventListener("click", stepFwdButton);
     $("btn-back").addEventListener("click", function () { if (state.game) goTo(state.ply - 1); });
