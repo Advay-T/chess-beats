@@ -17,8 +17,3 @@ they are done.
   was checked in a browser; the landing page was checked at 390px.
 - [ ] **Reduced motion on the landing page.** It should rest on the final position with no marquee,
   float or grain. The browser tools used so far couldn't emulate the setting.
-
-## To do
-
-- [ ] **README file list** is missing `pieces.js`, `sling.js`, `brand/` and `tools/logo/`, and
-  `background.js` is described only for the player (the landing page uses it too).

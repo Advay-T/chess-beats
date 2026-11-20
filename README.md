@@ -65,22 +65,38 @@ Try the two built-in games back to back: the **Immortal Game** (1851) is a storm
 
 ## Files
 
-- `index.html`, `landing.css`, `landing.js`: landing page (silently plays the Immortal Game to animate the page)
-- `play.html`, `style.css`: the player page and layout
-- `app.js`: board, PGN loading, move list, playback
-- `music.js`: move → notes mapping, including the motion melody (pure logic)
-- `analysis.js`: whole-game pass: material, tension, phase, profile and auto key/tempo (pure logic)
-- `arrangement.js`: pad chord, groove and effects for each move (pure logic)
-- `audio.js`: Tone.js instruments
-- `background.js`: animated glass background (WebGL). Its lit edges turn from cyan to amber as tension rises. The shader is adapted from GlassFold in [GradFlow](https://gradflow.meerbahadin.dev).
+**Pages**
+- `index.html`, `landing.css`, `landing.js`: the landing page (the front page). It silently plays the Immortal Game to animate itself, and its mixing desk plays each channel's sound when you click or hover it.
+- `play.html`, `style.css`, `app.js`: the player: board, PGN loading, move list, playback
+- `games.html`, `games.css`, `games-page.js`: the game library page
+
+**Music (pure logic, tested in Node)**
+- `music.js`: move → notes mapping, including the motion melody
+- `analysis.js`: whole-game pass: material, tension, phase, profile and auto key/tempo
+- `arrangement.js`: pad chord, groove and effects for each move
+- `pgn.js`: PGN → moves, positions and analysis, shared by the player, the library page and the build
+
+**Sound and visuals**
+- `audio.js`: Tone.js instruments, plus the iPhone fixes (plays with the silent switch on, resumes after the screen locks)
+- `background.js`: animated glass background (WebGL) on the landing page and the player. Its lit edges turn from cyan to amber as tension rises. The shader is adapted from GlassFold in [GradFlow](https://gradflow.meerbahadin.dev).
+- `pieces.js`: the Cburnett chess pieces as SVG, so they look the same on every device
+- `sling.js`: the player's playback buttons: tap them, or pull one sideways and let go
+- `brand/`: the logo, favicons and iPhone home-screen icon (**generated** by `npm run build:logo`)
+
+**Game data**
 - `games.js`: built-in classics (source for the Classics collection)
-- `games.html`, `games-page.js`, `games.css`: game library page
-- `pgn.js`: PGN → moves, positions and analysis, shared by both pages and the build
 - `library.js`: **generated** game library (do not edit)
 - `data/pgn/`: the Fischer and Tal books from [brianerdelyi/ChessPGN](https://github.com/brianerdelyi/ChessPGN) (CC0), and `pgnmentor-selected.pgn` (**generated**: the games picked from PGN Mentor)
+
+**Tools and tests**
 - `tools/collections.js`: the list of collections, categories and quotas
 - `tools/fetch-pgnmentor.js`, `tools/pgn-select.js`, `tools/zip.js`: download PGN Mentor player files and pick the games
 - `tools/pgn-normalize.js`, `tools/build-library.js`: clean the PGNs and build `library.js`
+- `tools/logo/knight.html`, `tools/logo/render.mjs`: model the 3D knight logo and render `brand/` in headless Chrome
+- `test/`: the tests run by `npm test`
+
+**For contributors**
+- `CLAUDE.md`: the project's rules and how to deploy; `PLAN.md`: open work
 
 ## Tests (optional, for developers)
 
