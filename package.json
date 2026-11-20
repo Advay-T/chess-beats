@@ -1,0 +1,12 @@
+{
+  "name": "chess-music",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Turn chess games into music. The app needs no build step; npm is only used for tests.",
+  "scripts": {
+    "test": "node test/music.test.js"
+  },
+  "devDependencies": {
+    "chess.js": "0.10.3"
+  }
+}
