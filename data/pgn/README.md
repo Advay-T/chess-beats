@@ -2,16 +2,16 @@
 
 ## Books
 
-These files are copied unchanged from [brianerdelyi/ChessPGN](https://github.com/brianerdelyi/ChessPGN), released under **CC0 1.0** (public domain dedication).
+These files come from [brianerdelyi/ChessPGN](https://github.com/brianerdelyi/ChessPGN), released under **CC0 1.0** (public domain dedication).
 
 | File | Book |
 |---|---|
 | `fischer-60.pgn` | Fischer, Bobby. *My 60 Memorable Games.* New York, Simon & Schuster, 1969 |
 | `tal.pgn` | Tal, Mikhail. *The Life and Games of Mikhail Tal.* RHM, 1976 |
 
-Only the moves and game headers are used (no book commentary).
+They keep only game headers and moves. The few `{...}` comments in the originals (book commentary and a placeholder) have been removed.
 
-`tal.pgn` is malformed in places (tags and games run together, move numbers glued onto moves, one tag missing its `[E`). `tools/pgn-normalize.js` repairs this at build time; the originals are left as-is so they can be re-synced from upstream.
+`tal.pgn` is malformed in places (tags and games run together, move numbers glued onto moves, one tag missing its `[E`). `tools/pgn-normalize.js` repairs this at build time. Apart from removing comments, the files are otherwise as published upstream.
 
 ## PGN Mentor selection
 
