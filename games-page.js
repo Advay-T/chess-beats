@@ -127,6 +127,7 @@
     document.querySelectorAll("#f-category button").forEach(function (b) {
       b.setAttribute("aria-pressed", String(b.dataset.g === filters.g));
     });
+    Thumb.to(document.querySelector('#f-category button[aria-pressed="true"]'));
     // Player list follows the chosen category.
     var list = LIB.collections.filter(function (c) { return !filters.g || c.category === filters.g; });
     if (filters.c && !list.some(function (c) { return c.id === filters.c; })) filters.c = "";
@@ -135,6 +136,46 @@
     }).join("");
     $("f-player").value = filters.c;
   }
+
+  // ---------- category highlight: slides between the buttons on a spring ----------
+  // Interruptible (a click mid-slide keeps the current speed and turns toward the new button) and
+  // it stretches to each button's width. Reduced motion, a resize or the first placement: it jumps.
+  var Thumb = (function () {
+    var K = 420, ZETA = 0.82, C = 2 * ZETA * Math.sqrt(K); // stiffness, damping: one barely-there overshoot
+    var el = null, x = 0, w = 0, vx = 0, vw = 0, tx = 0, tw = 0, raf = 0, last = 0, placed = false;
+    var still = window.matchMedia("(prefers-reduced-motion: reduce)");
+    function draw() { el.style.transform = "translateX(" + x.toFixed(2) + "px)"; el.style.width = w.toFixed(2) + "px"; }
+    function step(now) {
+      var dt = Math.min(0.032, (now - last) / 1000); last = now;
+      for (var i = 0, h = dt / 4; i < 4; i++) { // semi-implicit Euler, substepped
+        vx += (-K * (x - tx) - C * vx) * h; x += vx * h;
+        vw += (-K * (w - tw) - C * vw) * h; w += vw * h;
+      }
+      var done = Math.abs(x - tx) < 0.2 && Math.abs(vx) < 2 && Math.abs(w - tw) < 0.2 && Math.abs(vw) < 2;
+      if (done) { x = tx; w = tw; vx = vw = 0; raf = 0; } else raf = requestAnimationFrame(step);
+      draw();
+    }
+    function to(btn, jump) {
+      var seg = $("f-category");
+      if (!el) {
+        el = document.createElement("span");
+        el.className = "seg-thumb";
+        el.setAttribute("aria-hidden", "true");
+        seg.insertBefore(el, seg.firstChild);
+        seg.setAttribute("data-thumb", "");
+        new ResizeObserver(function () { var b = seg.querySelector('[aria-pressed="true"]'); if (b) to(b, true); }).observe(seg);
+      }
+      if (!btn) return;
+      tx = btn.offsetLeft; tw = btn.offsetWidth;
+      if (jump || !placed || still.matches) {
+        cancelAnimationFrame(raf); raf = 0;
+        x = tx; w = tw; vx = vw = 0; placed = true; draw();
+        return;
+      }
+      if (!raf) { last = performance.now(); raf = requestAnimationFrame(step); }
+    }
+    return { to: to };
+  })();
 
   // "My 60 Memorable Games" -> "Bobby Fischer: My 60 Memorable Games" for the book collections.
   function playerLabel(c) {

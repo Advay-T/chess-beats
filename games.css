@@ -14,7 +14,7 @@
   background: rgba(22, 24, 31, .88); backdrop-filter: blur(14px);
   border: 1px solid var(--line); border-radius: var(--r2);
 }
-.seg { display: inline-flex; padding: 3px; gap: 2px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r1); }
+.seg { position: relative; isolation: isolate; display: inline-flex; padding: 3px; gap: 2px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r1); }
 .seg button {
   font: inherit; font-size: var(--fs-sm); font-weight: 600;
   padding: 6px var(--s3); border: 0; border-radius: 4px; cursor: pointer;
@@ -24,6 +24,15 @@
 .seg button span { font-weight: 400; color: var(--faint); margin-left: 2px; }
 .seg button:hover { color: var(--text); }
 .seg button[aria-pressed="true"] { background: var(--surface-3); color: var(--text); }
+/* The sliding highlight (games-page.js moves it on a spring). Once it's there, the pressed button
+   drops its own background and the thumb shows through. */
+.seg button { position: relative; z-index: 1; }
+.seg-thumb {
+  position: absolute; z-index: 0; top: 3px; bottom: 3px; left: 0; width: 0; border-radius: 4px;
+  background: var(--surface-3); box-shadow: 0 1px 0 rgba(255, 255, 255, .05) inset, 0 2px 8px rgba(0, 0, 0, .35);
+  pointer-events: none; will-change: transform, width;
+}
+.seg[data-thumb] button[aria-pressed="true"] { background: transparent; }
 .lib-search {
   font: inherit; font-size: var(--fs-sm); color: var(--text);
   width: 100%; padding: var(--s2) var(--s3);
