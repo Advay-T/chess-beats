@@ -27,7 +27,7 @@
 
   var parsePgn = function (text) { return ChessPgn.parse(text); };
 
-  function loadGame(text, parsed) {
+  function loadGame(text, parsed, bpm) {
     var game = parsed || parsePgn(text); // throws on bad input
     pause();
     state.game = game;
@@ -40,8 +40,9 @@
     var a = game.analysis.auto;
     $("auto-root").textContent = "Auto (" + a.root.replace("b", "♭") + ")";
     $("auto-mode").textContent = "Auto (" + a.mode + ")";
-    $("tempo").value = DEFAULT_BPM; // every game starts here; the slider can still override it
-    $("tempo-out").textContent = DEFAULT_BPM;
+    // Every game starts at 200 (chess.com bullet 250, blitz 225); the slider can still override it.
+    $("tempo").value = bpm || DEFAULT_BPM;
+    $("tempo-out").textContent = bpm || DEFAULT_BPM;
     showProfile();
     renderMoveList();
     render();
@@ -518,7 +519,7 @@
       var item = pl.items[i];
       if (!item.parsed) { try { item.parsed = parsePgn(item.text); } catch (e) { continue; } }
       pl.index = i;
-      loadCustom(item.text, item.label, { sub: item.sub, game: item.parsed, playlist: pl });
+      loadCustom(item.text, item.label, { sub: item.sub, game: item.parsed, playlist: pl, bpm: item.bpm });
       return true;
     }
     updateNav();
@@ -538,11 +539,12 @@
   function showError(msg) { $("pgn-error").textContent = msg || ""; }
 
   // opts.sub: the title's second line (default: the players); opts.game: an already-parsed game;
-  // opts.playlist: the chess.com list this game belongs to, so the arrows and Auto-advance walk it.
+  // opts.playlist: the chess.com list this game belongs to, so the arrows and Auto-advance walk it;
+  // opts.bpm: its starting tempo (default DEFAULT_BPM).
   function loadCustom(text, label, opts) {
     opts = opts || {};
     try {
-      loadGame(text, opts.game);
+      loadGame(text, opts.game, opts.bpm);
       showError("");
       state.entry = null;
       state.playlist = opts.playlist || null;
@@ -576,7 +578,7 @@
     if (start) loadEntry(start);
     if (pending && pending.text) {
       var pl = pending.playlist && pending.playlist.items && pending.playlist.items.length ? pending.playlist : null;
-      loadCustom(pending.text, pending.label, { sub: pending.sub, playlist: pl });
+      loadCustom(pending.text, pending.label, { sub: pending.sub, playlist: pl, bpm: pending.bpm });
     }
 
     // Back to the grid with the filters it was left on.
@@ -613,7 +615,10 @@
     // The Load dialog (load-dialog.js): pasted, uploaded and chess.com games all load here, in place.
     LoadDialog.init({
       onText: function (text, label) { loadCustom(text, label); },
-      onPick: function (pgn, label, sub, parsed, playlist) { loadCustom(pgn, label, { sub: sub, game: parsed, playlist: playlist }); }
+      onPick: function (pgn, label, sub, parsed, playlist) {
+        var bpm = playlist && playlist.items[playlist.index].bpm;
+        loadCustom(pgn, label, { sub: sub, game: parsed, playlist: playlist, bpm: bpm });
+      }
     });
     $("btn-open-pgn").addEventListener("click", LoadDialog.open);
     $("btn-open-help").addEventListener("click", function () { $("help-dialog").showModal(); });

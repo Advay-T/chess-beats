@@ -53,7 +53,7 @@ famous games. The README holds the user-facing detail (sound tables, library cat
   length (pawn 16th up to queen half note); white = triangle synth on the left, black = FM synth on
   the right; capture = snare, check = cymbal, castling = chord, promotion = run, mate = final hit.
   The four layers (Motion, Harmony, Groove, Phase) each have an on/off switch. Every game starts at
-  200 BPM with an auto key. Change the README's tables when this changes.
+  200 BPM (chess.com bullet 250, blitz 225) with an auto key. Change the README's tables when this changes.
 - **Look:** a dark theme. Ground `#0e0f13`; the white voice is light blue `#7fd3ff`, the black voice
   coral `#ff9470`, tension amber `#ffb347`. Tokens live at the top of `style.css` and
   `landing.css`; use them rather than new hex values.

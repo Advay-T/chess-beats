@@ -57,7 +57,7 @@ Before playing, the app analyses the entire game (material, tension and phase af
 | **Groove** | A beat that follows tension (captures, checks and how many captures are available). Calm = silence → hi-hats → kick + bass → full beat with snare. |
 | **Phase** | Opening: sparse and dry. Middlegame: everything on. Endgame: slower, with echo and more reverb. |
 
-**Auto key.** With Key and Scale on *Auto*, each game picks its own: tactical games (lots of captures and checks) go minor, positional games major, and the key comes from the opening moves, so games with the same opening share a key. Every game (and every preview in the library) starts at 200 BPM. Pick any key, scale or tempo to override.
+**Auto key.** With Key and Scale on *Auto*, each game picks its own: tactical games (lots of captures and checks) go minor, positional games major, and the key comes from the opening moves, so games with the same opening share a key. Every game (and every preview in the library) starts at 200 BPM, except chess.com imports: bullet games start at 250 and blitz at 225. Pick any key, scale or tempo to override.
 
 **Timeline.** The strip under the board shows the shape of the game: background colour = phase, orange area = tension, white line = material (up = White ahead, down = Black ahead), red ticks = captures, yellow ticks = checks. Click it to jump to that point.
 

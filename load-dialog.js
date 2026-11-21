@@ -18,6 +18,7 @@
   var onPick = function () {};
   var cc = { cache: {}, timeClass: "", token: 0, user: "" };
   var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  var TC_BPM = { bullet: 250, blitz: 225 }; // faster time controls start faster; everything else at 200
   var TC_NAME = { bullet: "Bullet", blitz: "Blitz", rapid: "Rapid", daily: "Daily" };
 
   function selectTab(which, focus) {
@@ -156,7 +157,8 @@
         text: g.pgn,
         label: w.username + " vs " + b.username,
         sub: ["Chess.com", TC_NAME[g.time_class], g.end_time ? dateLabel(g.end_time) : ""].filter(Boolean).join(" · "),
-        parsed: it.parsed || null
+        parsed: it.parsed || null,
+        bpm: TC_BPM[g.time_class] || 200
       };
     });
     var me = items[i];
@@ -226,11 +228,11 @@
     }
     // Keep only the first game: a big multi-game file could overflow sessionStorage.
     var first = String(text).replace(/\r\n?/g, "\n").trim().split(/\n\s*\n(?=\[Event )/)[0];
-    var pending = { text: first, label: label, sub: sub || "" };
+    var pending = { text: first, label: label, sub: sub || "", bpm: playlist ? playlist.items[playlist.index].bpm : undefined };
     var withList = playlist ? {
-      text: pending.text, label: pending.label, sub: pending.sub,
+      text: pending.text, label: pending.label, sub: pending.sub, bpm: pending.bpm,
       // parsed games don't survive JSON: the player re-parses each one when it plays
-      playlist: { index: playlist.index, items: playlist.items.map(function (it) { return { text: it.text, label: it.label, sub: it.sub }; }) }
+      playlist: { index: playlist.index, items: playlist.items.map(function (it) { return { text: it.text, label: it.label, sub: it.sub, bpm: it.bpm }; }) }
     } : null;
     try {
       try { sessionStorage.setItem(PENDING_KEY, JSON.stringify(withList || pending)); }
