@@ -14,7 +14,8 @@
   function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
   function parsePgn(text) { return ChessPgn.parse(text); }
 
-  var TAB_KEY = "chessBeats.loadTab", CC_USER_KEY = "chessBeats.chesscomUser";
+  var TAB_KEY = "chessBeats.loadTab";
+  try { localStorage.removeItem("chessBeats.chesscomUser"); } catch (e) {} // an older version remembered the username
   var onPick = function () {};
   var cc = { cache: {}, timeClass: "", token: 0, user: "" };
   var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -117,7 +118,6 @@
   function ccSearch() {
     var user = $("cc-user").value.trim().toLowerCase();
     if (!user) { ccStatus("Type a chess.com username first.", "error"); $("cc-user").focus(); return; }
-    try { localStorage.setItem(CC_USER_KEY, user); } catch (e) {}
     var key = user + "|" + cc.timeClass, token = ++cc.token;
     var what = cc.timeClass ? TC_NAME[cc.timeClass].toLowerCase() + " " : "standard ";
     var done = function (list) {
@@ -191,7 +191,6 @@
         next.focus();
       });
     });
-    try { $("cc-user").value = localStorage.getItem(CC_USER_KEY) || ""; } catch (e) {}
     $("cc-form").addEventListener("submit", function (e) { e.preventDefault(); ccSearch(); });
     $("pgn-dialog").querySelectorAll(".chip-btn").forEach(function (chip) {
       chip.addEventListener("click", function () {
@@ -211,8 +210,19 @@
 
   function showError(msg) { $("pgn-error").textContent = msg || ""; }
 
+  // Every opening starts fresh on the Chess.com tab: no username, no results from last time.
+  function resetChessCom() {
+    cc.token++; // a search still running from last time is ignored
+    $("cc-user").value = "";
+    $("cc-results").innerHTML = "";
+    ccStatus("");
+    $("cc-find").disabled = false;
+    widenForResults();
+  }
+
   function open() {
     showError("");
+    resetChessCom();
     $("pgn-dialog").showModal();
     ($("panel-cc").hidden ? $("pgn-input") : $("cc-user")).focus();
   }
