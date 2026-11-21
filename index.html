@@ -26,6 +26,7 @@
     <link rel="preconnect" href="https://api.fontshare.com" />
     <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=excon@400,500&display=swap" />
     <link rel="stylesheet" href="landing.css" />
+    <link rel="stylesheet" href="load-dialog.css" />
     <script type="importmap">
       { "imports": {
           "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
@@ -51,7 +52,7 @@
 
     <header class="nav">
       <a class="nav-brand brand-link" href="index.html">
-        <span class="brand-knight"><img src="brand/knight-mark@2x.png" width="40" height="40" alt="" /></span>
+        <span class="brand-knight"><img src="brand/knight-mark@2x.png" width="48" height="48" alt="" /></span>
         <span class="brand-word">Chess Beats</span>
       </a>
       <nav class="nav-links" aria-label="Main">
@@ -125,6 +126,10 @@
               Play the Immortal Game
             </a>
             <a class="btn btn-ghost" href="games.html">Browse 1,003 games</a>
+            <button class="btn btn-ghost" id="btn-open-load" type="button" aria-haspopup="dialog">
+              <svg class="stroke" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4"/><path d="m7.5 8.5 4.5-4.5 4.5 4.5"/><path d="M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></svg>
+              <span class="btn-label">Load a game</span>
+            </button>
           </div>
         </div>
       </section>
@@ -302,6 +307,73 @@
         </p>
       </div>
     </footer>
+
+    <dialog id="pgn-dialog" class="dialog load-dialog" aria-labelledby="pgn-title">
+      <form method="dialog" class="dialog-head">
+        <h2 id="pgn-title">Load a game</h2>
+        <button class="btn btn-ghost icon" aria-label="Close">✕</button>
+      </form>
+      <div class="tabs" role="tablist" aria-label="Where the game comes from">
+        <button class="tab" role="tab" type="button" id="tab-pgn" aria-controls="panel-pgn" aria-selected="true">Paste or upload</button>
+        <button class="tab" role="tab" type="button" id="tab-cc" aria-controls="panel-cc" aria-selected="false" tabindex="-1">Chess.com</button>
+      </div>
+
+      <div class="tab-panel" role="tabpanel" id="panel-pgn" aria-labelledby="tab-pgn">
+        <p class="dialog-text">
+          Paste a game, or upload a .pgn file exported from Lichess or Chess.com.
+          If the file holds several games, the first one loads. It opens in the player.
+        </p>
+        <label for="pgn-input" class="field-label">PGN</label>
+        <textarea
+          id="pgn-input"
+          rows="8"
+          placeholder="1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 ..."
+        ></textarea>
+        <div id="pgn-error" class="error" role="alert"></div>
+        <div class="dialog-actions">
+          <label class="btn file-btn"
+            >Upload .pgn<input
+              id="pgn-file"
+              type="file"
+              accept=".pgn,.txt,text/plain"
+          /></label>
+          <button id="btn-load" class="btn btn-primary" type="button">Load and play</button>
+        </div>
+      </div>
+
+      <div class="tab-panel" role="tabpanel" id="panel-cc" aria-labelledby="tab-cc" hidden>
+        <p class="dialog-text">
+          Type a chess.com username to see that player's last 25 standard games, then pick one to open it in the player.
+        </p>
+        <form id="cc-form" class="cc-form" novalidate>
+          <label for="cc-user" class="field-label">Chess.com username</label>
+          <div class="cc-row">
+            <input id="cc-user" class="cc-input" type="text" name="username" autocomplete="username"
+              autocapitalize="none" spellcheck="false" placeholder="e.g. hikaru" maxlength="50" required />
+            <button id="cc-find" class="btn btn-primary" type="submit">Find games</button>
+          </div>
+          <div class="cc-filters" role="radiogroup" aria-label="Time control">
+            <button type="button" class="chip-btn" role="radio" aria-checked="true" data-tc="">All</button>
+            <button type="button" class="chip-btn" role="radio" aria-checked="false" data-tc="bullet">Bullet</button>
+            <button type="button" class="chip-btn" role="radio" aria-checked="false" data-tc="blitz">Blitz</button>
+            <button type="button" class="chip-btn" role="radio" aria-checked="false" data-tc="rapid">Rapid</button>
+            <button type="button" class="chip-btn" role="radio" aria-checked="false" data-tc="daily">Daily</button>
+          </div>
+        </form>
+        <p id="cc-status" class="cc-status" aria-live="polite"></p>
+        <div id="cc-results" class="cc-results"></div>
+      </div>
+      <!-- The checkerboard behind every mini board, inside the dialog so its tokens apply. -->
+      <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+        <defs>
+          <pattern id="mini-squares" width="20" height="20" patternUnits="userSpaceOnUse">
+            <rect width="20" height="20" style="fill: var(--sq-light)" />
+            <rect x="10" width="10" height="10" style="fill: var(--sq-dark)" />
+            <rect y="10" width="10" height="10" style="fill: var(--sq-dark)" />
+          </pattern>
+        </defs>
+      </svg>
+    </dialog>
 
     <script src="background.js"></script>
     <script src="landing.js"></script>

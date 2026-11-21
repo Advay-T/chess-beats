@@ -26,8 +26,8 @@
 
   var parsePgn = function (text) { return ChessPgn.parse(text); };
 
-  function loadGame(text) {
-    var game = parsePgn(text); // throws on bad input
+  function loadGame(text, parsed) {
+    var game = parsed || parsePgn(text); // throws on bad input
     pause();
     state.game = game;
     state.ply = 0;
@@ -508,13 +508,15 @@
 
   function showError(msg) { $("pgn-error").textContent = msg || ""; }
 
-  function loadCustom(text, label) {
+  // opts.sub: the title's second line (default: the players); opts.game: an already-parsed game.
+  function loadCustom(text, label, opts) {
+    opts = opts || {};
     try {
-      loadGame(text);
+      loadGame(text, opts.game);
       showError("");
       state.entry = null;
       var h = state.game.headers;
-      setTitle(label || "Your PGN", [h.White, h.Black].filter(Boolean).join(" vs "));
+      setTitle(label || "Your PGN", opts.sub || [h.White, h.Black].filter(Boolean).join(" vs "));
       updateNav();
       history.replaceState(null, "", location.pathname);
       $("pgn-dialog").close();
@@ -541,7 +543,7 @@
       } catch (e) {}
     }
     if (start) loadEntry(start);
-    if (pending && pending.text) loadCustom(pending.text, pending.label);
+    if (pending && pending.text) loadCustom(pending.text, pending.label, { sub: pending.sub });
 
     // Back to the grid with the filters it was left on.
     try { $("link-library").href = "games.html" + (sessionStorage.getItem("chessBeats.libraryHash") || ""); } catch (e) {}
@@ -574,25 +576,14 @@
     });
     window.addEventListener("resize", drawTimeline);
 
-    $("btn-open-pgn").addEventListener("click", function () {
-      showError("");
-      $("pgn-dialog").showModal();
-      $("pgn-input").focus();
+    // The Load dialog (load-dialog.js): pasted, uploaded and chess.com games all load here, in place.
+    LoadDialog.init({
+      onText: function (text, label) { loadCustom(text, label); },
+      onPick: function (pgn, label, sub, parsed) { loadCustom(pgn, label, { sub: sub, game: parsed }); }
     });
+    $("btn-open-pgn").addEventListener("click", LoadDialog.open);
     $("btn-open-help").addEventListener("click", function () { $("help-dialog").showModal(); });
 
-    $("btn-load").addEventListener("click", function () {
-      loadCustom($("pgn-input").value, "Your PGN (pasted)");
-    });
-    $("pgn-file").addEventListener("change", function (e) {
-      var file = e.target.files[0];
-      if (!file) return;
-      file.text().then(function (text) {
-        $("pgn-input").value = text;
-        loadCustom(text, file.name);
-      });
-      e.target.value = ""; // allow re-uploading the same file
-    });
 
     document.addEventListener("keydown", function (e) {
       if (document.querySelector("dialog[open]")) return; // dialogs keep their own keys

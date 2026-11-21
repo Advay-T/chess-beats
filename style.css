@@ -545,6 +545,7 @@ input[type="range"] { width: 100%; accent-color: var(--white-voice); cursor: poi
 .file-btn input { display: none; }
 .file-btn:focus-within { outline: 2px solid var(--white-voice); outline-offset: 3px; }
 .error { color: #ff8f85; margin-top: var(--s2); font-size: var(--fs-sm); }
+
 .error:empty { display: none; }
 
 .help-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4) var(--s5); }

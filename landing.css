@@ -97,7 +97,9 @@ a { color: inherit; }
 @property --beam { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
 @keyframes beam { to { --beam: 360deg; } }
 .btn-ghost:hover { border-color: rgba(238, 227, 203, .4); background: rgba(255, 255, 255, .06); }
-.btn-small { min-height: 40px; padding: 0 16px; font-size: 14px; }
+.btn-small { min-height: 44px; padding: 0 18px; font-size: 16px; white-space: nowrap; }
+.btn svg.stroke { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.btn[aria-busy="true"] { cursor: progress; opacity: .75; }
 @media (hover: hover) and (pointer: fine) {
   .btn:hover { --lift: -2px; }
   .btn-primary:hover { background: #a6e1ff; box-shadow: 0 14px 36px rgba(127, 211, 255, .35); }
@@ -112,6 +114,7 @@ a { color: inherit; }
   background: linear-gradient(180deg, rgba(14, 15, 19, .8), rgba(14, 15, 19, 0));
 }
 .nav-brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--cream); }
+.nav .nav-brand img { width: 48px; height: 48px; margin: -4px 0; } /* the same knight size as the player and library */
 /* Brand link: hover makes the knight rear up on its base, its mane glows, and the wordmark
    underlines in the two voice colours. Feedback for the home link: under 300ms, transform and
    opacity only, real pointers only; a press settles it back down. */
@@ -127,8 +130,8 @@ a { color: inherit; }
   opacity: 0; transition: opacity 240ms var(--ease-out);
 }
 .brand-word { /* the wordmark: Excon Regular, the same on every page (fonts from Fontshare's CDN) */
-  position: relative;
-  font: 400 24px/1 "Excon", system-ui, -apple-system, "Segoe UI", sans-serif; letter-spacing: .01em;
+  position: relative; white-space: nowrap;
+  font: 400 26px/1 "Excon", system-ui, -apple-system, "Segoe UI", sans-serif; letter-spacing: .01em;
 }
 .brand-word::after {
   content: ""; position: absolute; left: 0; right: 0; bottom: -5px; height: 2px; border-radius: 2px;
@@ -147,7 +150,7 @@ a { color: inherit; }
   /* Keep the glow and underline as state cues; drop the movement. */
   .brand-link:hover .brand-knight, .brand-link:active .brand-knight { transform: none; }
 }
-.nav-links { display: flex; align-items: center; gap: 26px; font-size: 15px; }
+.nav-links { display: flex; align-items: center; gap: 28px; font-size: 16px; }
 .nav-links a:not(.btn) {
   color: var(--muted); text-decoration: none; padding: 12px 0;
   background: linear-gradient(currentColor, currentColor) 0 calc(100% - 8px) / 0 1px no-repeat;
@@ -407,7 +410,10 @@ a { color: inherit; }
 }
 @media (max-width: 640px) {
   .nav-links a:not(.btn) { display: none; }
-  .brand-word { font-size: 20px; }
+  .brand-word { font-size: 24px; }
+  .nav .nav-brand img { width: 42px; height: 42px; }
+  .nav .nav-brand { gap: 8px; }
+  .nav .btn-small { padding: 0 14px; font-size: 15px; }
   .counter { --digit: 24px; top: auto; bottom: 18px; right: 50%; translate: 50% 0; justify-items: center; text-align: center; position: absolute; }
   .hero { padding-bottom: 140px; }
   .hero-stage { width: min(46vh, 80vw); }

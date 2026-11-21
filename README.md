@@ -7,7 +7,7 @@ Turn any chess game into music. Every move plays a note; captures, checks, castl
 ## Using it
 
 1. Double-click `index.html` for the landing page, or `play.html` to go straight to the player (any modern browser; needs internet the first time to load chess.js and Tone.js from a CDN).
-2. Click **All games** to browse the library, or **Load a game** to paste a PGN or upload a `.pgn` file.
+2. Click **All games** to browse the library, or **Load a game** to paste a PGN, upload a `.pgn` file, or type a chess.com username and pick one of that player's last 25 standard games. The landing page's **Load a game** button and the library's **Load your own game** offer the same, and open the game in the player.
 3. Press **▶**. Change tempo, key, scale and layers any time, even while it plays.
 
 Keyboard: `Space` play/pause · `→` step forward (with sound) · `←` step back (silent) · `Home` / `End`.
@@ -75,6 +75,8 @@ Try the two built-in games back to back: the **Immortal Game** (1851) is a storm
 - `analysis.js`: whole-game pass: material, tension, phase, profile and auto key/tempo
 - `arrangement.js`: pad chord, groove and effects for each move
 - `pgn.js`: PGN → moves, positions and analysis, shared by the player, the library page and the build
+- `chesscom.js`: a chess.com player's most recent standard games, from chess.com's public API (no key)
+- `load-dialog.js`, `load-dialog.css`: the "Load a game" dialog (paste, upload or chess.com), shared by the landing page, the player and the library
 
 **Sound and visuals**
 - `audio.js`: Tone.js instruments, plus the iPhone fixes (plays with the silent switch on, resumes after the screen locks)
@@ -82,6 +84,7 @@ Try the two built-in games back to back: the **Immortal Game** (1851) is a storm
 - `knight3d.js`: the 3D knight itself (a sculpted distance field turned into a mesh), shared by the logo renderer and the landing page
 - `landing-knight.js`: the landing page's live knight: grab it to spin it, flick it, and it springs back home
 - `pieces.js`: the Cburnett chess pieces as SVG, so they look the same on every device
+- `miniboard.js`: the small board and tension-line previews on library cards and in the chess.com picker
 - `sling.js`: the player's playback buttons: tap them, or pull one sideways and let go
 - `brand/`: the logo, favicons and iPhone home-screen icon (**generated** by `npm run build:logo`)
 
@@ -107,7 +110,7 @@ npm install
 npm test
 ```
 
-This checks the note mapping, the game analysis and the arrangement, the PGN clean-up, and that every library game replays legally. The app itself needs no install or build step.
+This checks the note mapping, the game analysis and the arrangement, the PGN clean-up, the chess.com fetch (against a fake API), and that every library game replays legally. The app itself needs no install or build step.
 
 After changing `data/pgn/`, `games.js` or `tools/collections.js`, regenerate the library:
 

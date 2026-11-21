@@ -6,7 +6,6 @@
   var PREVIEW_PLIES = 8;
   var DEFAULT_BPM = 200; // same starting tempo as the player
   var HASH_KEY = "chessBeats.libraryHash";
-  var PENDING_KEY = "chessBeats.pendingPgn"; // read once by app.js on play.html?pgn=pending
 
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
@@ -16,44 +15,8 @@
   var byId = {};
   LIB.games.forEach(function (g) { byId[g.id] = g; });
 
-  // ---------- mini-board (SVG) ----------
-
-  function sqXY(sq) { return { x: "abcdefgh".indexOf(sq[0]) * 10, y: (8 - +sq[1]) * 10 }; }
-
-  // fen: piece-placement field only. move: { from, to, color } to tint, or null.
-  function boardSvg(fen, move) {
-    var out = '<svg class="mini" viewBox="0 0 80 80" role="img" aria-hidden="true"><rect width="80" height="80" fill="url(#mini-squares)"/>';
-    if (move) {
-      [move.from, move.to].forEach(function (sq) {
-        var p = sqXY(sq);
-        out += '<rect class="mini-hl ' + move.color + '" x="' + p.x + '" y="' + p.y + '" width="10" height="10"/>';
-      });
-    }
-    fen.split(" ")[0].split("/").forEach(function (row, r) {
-      var f = 0;
-      row.split("").forEach(function (ch) {
-        if (/\d/.test(ch)) { f += +ch; return; }
-        // Square box, not a font baseline, so every piece sits centred on every OS.
-        out += '<use href="#pc-' + ChessPieces.codeFor(ch) + '" x="' + (f * 10 + 0.5) + '" y="' + (r * 10 + 0.5) + '" width="9" height="9"/>';
-        f++;
-      });
-    });
-    return out + "</svg>";
-  }
-
-  // ---------- sparkline ----------
-
-  function sparkSvg(g) {
-    var w = 200, h = 28, n = g.spark.length;
-    var x = function (i) { return n === 1 ? 0 : (i / (n - 1)) * w; };
-    var y = function (v) { return h - 2 - v * (h - 4); };
-    var pts = g.spark.map(function (v, i) { return x(i).toFixed(1) + "," + y(v).toFixed(1); }).join(" ");
-    var px = g.plies > 1 ? ((g.peakPly - 1) / (g.plies - 1)) * w : 0;
-    return '<svg class="spark" viewBox="0 0 ' + w + " " + h + '" preserveAspectRatio="none" aria-hidden="true">' +
-      '<polygon class="spark-fill" points="0,' + h + " " + pts + " " + w + "," + h + '"/>' +
-      '<line class="spark-peak" x1="' + px.toFixed(1) + '" x2="' + px.toFixed(1) + '" y1="0" y2="' + h + '"/>' +
-      '<polyline class="spark-line" points="' + pts + '"/></svg>';
-  }
+  // Mini boards and sparklines come from miniboard.js (shared with the player's chess.com picker).
+  var boardSvg = MiniBoard.board, sparkSvg = MiniBoard.spark;
 
   // ---------- cards ----------
 
@@ -310,44 +273,12 @@
     window.addEventListener("pagehide", stopPreview);
 
     // ---------- load your own game ----------
-    // Check the PGN here so mistakes show in the dialog, then hand it to the player.
-    var showError = function (msg) { $("pgn-error").textContent = msg || ""; };
-    var openInPlayer = function (text, label) {
-      try {
-        ChessPgn.parse(text); // throws with a readable message on bad input
-      } catch (e) {
-        showError(e.message);
-        return;
-      }
-      // Keep only the first game: a big multi-game file could overflow sessionStorage.
-      var first = String(text).replace(/\r\n?/g, "\n").trim().split(/\n\s*\n(?=\[Event )/)[0];
-      try {
-        sessionStorage.setItem(PENDING_KEY, JSON.stringify({ text: first, label: label }));
-      } catch (e) {
-        showError("Couldn't hand the game to the player (browser storage is unavailable).");
-        return;
-      }
-      stopPreview();
-      location.href = "play.html?pgn=pending";
-    };
-    $("btn-open-pgn").addEventListener("click", function () {
-      stopPreview();
-      showError("");
-      $("pgn-dialog").showModal();
-      $("pgn-input").focus();
+    // The Load dialog (load-dialog.js): whatever is picked opens in the player.
+    LoadDialog.init({
+      onText: function (text, label) { LoadDialog.openInPlayer(text, label); },
+      onPick: function (pgn, label, sub, parsed) { LoadDialog.openInPlayer(pgn, label, sub, !!parsed); }
     });
-    $("btn-load").addEventListener("click", function () {
-      openInPlayer($("pgn-input").value, "Your PGN (pasted)");
-    });
-    $("pgn-file").addEventListener("change", function (e) {
-      var file = e.target.files[0];
-      if (!file) return;
-      file.text().then(function (text) {
-        $("pgn-input").value = text;
-        openInPlayer(text, file.name);
-      });
-      e.target.value = ""; // allow re-uploading the same file
-    });
+    $("btn-open-pgn").addEventListener("click", function () { stopPreview(); LoadDialog.open(); });
   }
 
   init();

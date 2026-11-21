@@ -30,9 +30,9 @@ famous games. The README holds the user-facing detail (sound tables, library cat
 | Landing page (front page) | `index.html`, `landing.css`, `landing.js`, `landing-knight.js` (the grabbable 3D knight) |
 | Player | `play.html`, `style.css`, `app.js` |
 | Library page | `games.html`, `games.css`, `games-page.js` |
-| Pure logic (Node-testable) | `music.js` (move → notes), `analysis.js` (material, tension, phase, auto key), `arrangement.js` (pad, groove, effects), `pgn.js` (PGN → game data, shared) |
+| Pure logic (Node-testable) | `music.js` (move → notes), `analysis.js` (material, tension, phase, auto key), `arrangement.js` (pad, groove, effects), `pgn.js` (PGN → game data, shared), `chesscom.js` (a player's recent chess.com games; `fetch` passed in) |
 | Audio | `audio.js` (Tone.js instruments, iOS unlock) |
-| UI pieces | `pieces.js` (Cburnett SVG pieces), `sling.js` (transport buttons), `background.js` (WebGL glass background) |
+| UI pieces | `pieces.js` (Cburnett SVG pieces), `sling.js` (transport buttons), `miniboard.js` (mini board + tension-line previews), `load-dialog.js` + `load-dialog.css` (the Load dialog: paste, upload, chess.com; on all three pages, self-contained styles), `background.js` (WebGL glass background) |
 | The 3D knight | `knight3d.js`: the sculpture and its look, shared by the logo renderer and the landing page |
 | Data | `games.js` (built-in classics), `library.js` (**generated**), `data/pgn/` (`pgnmentor-selected.pgn` is **generated**) |
 | Build tools | `tools/` (library build, PGN fetch and selection), `tools/logo/` (logo model and renderer) |
@@ -44,8 +44,11 @@ famous games. The README holds the user-facing detail (sound tables, library cat
 - **No build step, no framework.** Each file is a plain script (an IIFE that sets a `window.*`
   global; the logic files also `module.exports` for tests). Don't add bundlers, React or npm runtime
   dependencies.
-- **Keep logic files pure** (`music.js`, `analysis.js`, `arrangement.js`, `pgn.js`): no DOM, no audio,
+- **Keep logic files pure** (`music.js`, `analysis.js`, `arrangement.js`, `pgn.js`, `chesscom.js`): no DOM, no audio,
   so they stay testable in Node.
+- **Chess.com import:** the Load dialog calls chess.com's Published-Data API straight from the browser
+  (no key, CORS open). One request at a time, newest month first; a 429 waits 3 s and retries once.
+  The landing page loads the dialog's scripts (chess.js, `analysis.js`, `pgn.js`, …) only on first use.
 - **Sound mapping:** destination file → note in a pentatonic scale; rank → octave; piece → note
   length (pawn 16th up to queen half note); white = triangle synth on the left, black = FM synth on
   the right; capture = snare, check = cymbal, castling = chord, promotion = run, mate = final hit.

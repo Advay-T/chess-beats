@@ -4,7 +4,7 @@
   "private": true,
   "description": "Turn chess games into music. The app needs no build step; npm is only used for tests.",
   "scripts": {
-    "test": "node test/music.test.js && node test/analysis.test.js && node test/arrangement.test.js && node test/pgn-normalize.test.js && node test/pgn-select.test.js && node test/library.test.js",
+    "test": "node test/music.test.js && node test/analysis.test.js && node test/arrangement.test.js && node test/pgn-normalize.test.js && node test/pgn-select.test.js && node test/library.test.js && node test/chesscom.test.js",
     "build:library": "node tools/build-library.js",
     "fetch:pgnmentor": "node tools/fetch-pgnmentor.js",
     "build:logo": "node tools/logo/render.mjs"

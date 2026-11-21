@@ -17,6 +17,20 @@
   var PIECE = { K: "King", Q: "Queen", R: "Rook", B: "Bishop", N: "Knight" };
   var BEAT_MS = 1100;
 
+  // Load plain scripts one after another (each may need the one before). Resolves when all have run.
+  function loadScripts(list) {
+    return list.reduce(function (p, src) {
+      return p.then(function () {
+        return new Promise(function (resolve, reject) {
+          var s = document.createElement("script");
+          s.src = src; s.onload = resolve;
+          s.onerror = function () { s.remove(); reject(new Error("Couldn't load " + src)); };
+          document.head.appendChild(s);
+        });
+      });
+    }, Promise.resolve());
+  }
+
   function tensionAt(ply) { // ply: 0-based index of the move just played
     return SPARK[Math.round((ply / (MOVES.length - 1)) * (SPARK.length - 1))];
   }
@@ -102,15 +116,7 @@
 
     function load() { // Tone, then music.js, then audio.js, one after another
       if (loading) return loading;
-      loading = SCRIPTS.reduce(function (p, src) {
-        return p.then(function () {
-          return new Promise(function (resolve, reject) {
-            var s = document.createElement("script");
-            s.src = src; s.onload = resolve; s.onerror = reject;
-            document.head.appendChild(s);
-          });
-        });
-      }, Promise.resolve());
+      loading = loadScripts(SCRIPTS);
       loading.catch(function () { loading = null; }); // allow a retry (e.g. offline the first time)
       return loading;
     }
@@ -235,6 +241,47 @@
     tapeItems.forEach(function (el) { el.classList.toggle("now", +el.dataset.ply === ply); });
     $("playhead").style.transform = "translateX(" + ((ply / (MOVES.length - 1)) * W).toFixed(1) + "px)";
   }
+
+  // ---------- "Load a game": the same dialog as the player and library (load-dialog.js) ----------
+  // Its scripts load on first use (hovering or focusing the button starts it early), so the page itself
+  // stays light. Whatever is picked, pasted or uploaded opens in the player.
+  (function () {
+    var btn = $("btn-open-load");
+    if (!btn) return;
+    var SCRIPTS = [
+      "https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js", // same pin as the player
+      "analysis.js", "pgn.js", "pieces.js", "miniboard.js", "chesscom.js", "load-dialog.js"
+    ];
+    var label = btn.querySelector(".btn-label"), text = label.textContent, loading = null, ready = false;
+    function load() {
+      if (!loading) {
+        loading = loadScripts(SCRIPTS).then(function () {
+          if (!ready) {
+            LoadDialog.init({
+              onText: function (t, l) { LoadDialog.openInPlayer(t, l); },
+              onPick: function (pgn, l, sub, parsed) { LoadDialog.openInPlayer(pgn, l, sub, !!parsed); }
+            });
+            ready = true;
+          }
+        });
+        loading.catch(function () { loading = null; }); // offline the first time: let the next click retry
+      }
+      return loading;
+    }
+    btn.addEventListener("pointerenter", function () { load().catch(function () {}); });
+    btn.addEventListener("focus", function () { load().catch(function () {}); });
+    btn.addEventListener("click", function () {
+      if (ready) { LoadDialog.open(); return; }
+      btn.setAttribute("aria-busy", "true");
+      label.textContent = "Loading\u2026";
+      load().then(function () {
+        label.textContent = text;
+        LoadDialog.open();
+      }, function () {
+        label.textContent = "Couldn't load. Try again";
+      }).then(function () { btn.removeAttribute("aria-busy"); });
+    });
+  })();
 
   // Rest on the game's sharpest moment when motion is off; otherwise loop the whole game.
   if (still) {
