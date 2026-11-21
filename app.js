@@ -11,6 +11,7 @@
     padTimer: null,
     advanceTimer: null,
     entry: null, // the GAME_LIBRARY entry being played, or null for a pasted/uploaded PGN
+    playlist: null, // a chess.com player's games, { items: [{ text, label, sub, parsed? }], index }, or null
   };
 
   function esc(s) {
@@ -418,8 +419,7 @@
       if (next && $("auto-advance").checked) {
         $("auto-advance-switch").setAttribute("data-advancing", ""); // the switch shows the next game is queued
         state.advanceTimer = setTimeout(function () {
-          loadEntry(next);
-          play();
+          if (go(next, 1)) play();
         }, (g.mate ? 1 : 4) * (60000 / bpm()));
       }
       return;
@@ -478,7 +478,13 @@
   function collectionOf(entry) {
     return LIB.collections.find(function (c) { return c.id === entry.collection; });
   }
+  // The game before (dir -1) or after (dir 1) this one: in the chess.com playlist when there is one
+  // (the picker's order, newest first), otherwise in the library collection.
   function neighbour(dir) {
+    if (state.playlist) {
+      var i = state.playlist.index + dir;
+      return state.playlist.items[i] ? { playlistIndex: i, label: state.playlist.items[i].label } : null;
+    }
     if (!state.entry) return null;
     var list = LIB.games.filter(function (g) { return g.collection === state.entry.collection; });
     return list[list.indexOf(state.entry) + dir] || null;
@@ -493,13 +499,36 @@
     var prev = neighbour(-1), next = neighbour(1);
     $("btn-prev-game").disabled = !prev;
     $("btn-next-game").disabled = !next;
-    $("btn-prev-game").title = prev ? "Previous: " + (prev.name || prev.title) : "No previous game";
-    $("btn-next-game").title = next ? "Next: " + (next.name || next.title) : "No next game";
+    var name = function (g) { return g.label || g.name || g.title; };
+    $("btn-prev-game").title = prev ? "Previous: " + name(prev) : "No previous game";
+    $("btn-next-game").title = next ? "Next: " + name(next) : "No next game";
+  }
+
+  // Load what neighbour() returned. Returns true when a game loaded.
+  function go(target, dir) {
+    if (!target) return false;
+    if (target.playlistIndex == null) { loadEntry(target); return true; }
+    return loadPlaylistItem(target.playlistIndex, dir);
+  }
+
+  // Play a game from the chess.com playlist; one that won't parse is skipped in the same direction.
+  function loadPlaylistItem(i, dir) {
+    var pl = state.playlist;
+    for (; pl && pl.items[i]; i += dir || 1) {
+      var item = pl.items[i];
+      if (!item.parsed) { try { item.parsed = parsePgn(item.text); } catch (e) { continue; } }
+      pl.index = i;
+      loadCustom(item.text, item.label, { sub: item.sub, game: item.parsed, playlist: pl });
+      return true;
+    }
+    updateNav();
+    return false;
   }
 
   function loadEntry(entry) {
     loadGame(entry.pgn);
     state.entry = entry;
+    state.playlist = null;
     var c = collectionOf(entry);
     setTitle(entry.name || entry.title, [entry.name ? entry.title : "", entry.year, c && c.title].filter(Boolean).join(" · "));
     updateNav();
@@ -508,13 +537,15 @@
 
   function showError(msg) { $("pgn-error").textContent = msg || ""; }
 
-  // opts.sub: the title's second line (default: the players); opts.game: an already-parsed game.
+  // opts.sub: the title's second line (default: the players); opts.game: an already-parsed game;
+  // opts.playlist: the chess.com list this game belongs to, so the arrows and Auto-advance walk it.
   function loadCustom(text, label, opts) {
     opts = opts || {};
     try {
       loadGame(text, opts.game);
       showError("");
       state.entry = null;
+      state.playlist = opts.playlist || null;
       var h = state.game.headers;
       setTitle(label || "Your PGN", opts.sub || [h.White, h.Black].filter(Boolean).join(" vs "));
       updateNav();
@@ -543,12 +574,15 @@
       } catch (e) {}
     }
     if (start) loadEntry(start);
-    if (pending && pending.text) loadCustom(pending.text, pending.label, { sub: pending.sub });
+    if (pending && pending.text) {
+      var pl = pending.playlist && pending.playlist.items && pending.playlist.items.length ? pending.playlist : null;
+      loadCustom(pending.text, pending.label, { sub: pending.sub, playlist: pl });
+    }
 
     // Back to the grid with the filters it was left on.
     try { $("link-library").href = "games.html" + (sessionStorage.getItem("chessBeats.libraryHash") || ""); } catch (e) {}
-    $("btn-prev-game").addEventListener("click", function () { var g = neighbour(-1); if (g) loadEntry(g); });
-    $("btn-next-game").addEventListener("click", function () { var g = neighbour(1); if (g) loadEntry(g); });
+    $("btn-prev-game").addEventListener("click", function () { go(neighbour(-1), -1); });
+    $("btn-next-game").addEventListener("click", function () { go(neighbour(1), 1); });
     try { $("auto-advance").checked = localStorage.getItem(AUTO_KEY) === "1"; } catch (e) {}
     $("auto-advance").addEventListener("change", function (e) {
       try { localStorage.setItem(AUTO_KEY, e.target.checked ? "1" : "0"); } catch (err) {}
@@ -579,7 +613,7 @@
     // The Load dialog (load-dialog.js): pasted, uploaded and chess.com games all load here, in place.
     LoadDialog.init({
       onText: function (text, label) { loadCustom(text, label); },
-      onPick: function (pgn, label, sub, parsed) { loadCustom(pgn, label, { sub: sub, game: parsed }); }
+      onPick: function (pgn, label, sub, parsed, playlist) { loadCustom(pgn, label, { sub: sub, game: parsed, playlist: playlist }); }
     });
     $("btn-open-pgn").addEventListener("click", LoadDialog.open);
     $("btn-open-help").addEventListener("click", function () { $("help-dialog").showModal(); });

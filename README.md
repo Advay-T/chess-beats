@@ -29,7 +29,7 @@ The PGN Mentor files hold over 60,000 games, mostly blitz and online for modern 
 - **Each card's board shows the game's most intense moment** (where tension peaks), with that move tinted. The orange sparkline is the game's tension from start to finish, so you can choose a game by the shape of its music.
 - **▶ Preview** plays the 8 moves around the peak at the game's own key and tempo, and steps the card's board along with the notes.
 - **Filter and sort** by category, player, result, character (tactical / balanced / positional) and decade. You can also search players, events, openings and years, and sort by date, drama or length. Filters are kept in the URL.
-- **Album mode:** in the player, **◀ / ▶** step through the current collection in date order. Tick **Auto-advance** to roll into the next game when one ends.
+- **Album mode:** in the player, **← / →** step through the current collection in date order. Tick **Auto-advance** to roll into the next game when one ends. After picking a chess.com game, the arrows and Auto-advance walk that player's list instead, newest to oldest.
 
 ## How moves become music
 

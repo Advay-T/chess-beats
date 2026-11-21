@@ -149,9 +149,18 @@
     var list = cc.cache[cc.user + "|" + cc.timeClass];
     var item = list && list[i];
     if (!item) return;
-    var g = item.game, w = g.white || {}, b = g.black || {};
-    var sub = ["Chess.com", TC_NAME[g.time_class], g.end_time ? dateLabel(g.end_time) : ""].filter(Boolean).join(" · ");
-    onPick(g.pgn, w.username + " vs " + b.username, sub, item.parsed || null);
+    // The whole list goes along (in the order shown), so Auto-advance and the arrows can walk it.
+    var items = list.map(function (it) {
+      var g = it.game, w = g.white || {}, b = g.black || {};
+      return {
+        text: g.pgn,
+        label: w.username + " vs " + b.username,
+        sub: ["Chess.com", TC_NAME[g.time_class], g.end_time ? dateLabel(g.end_time) : ""].filter(Boolean).join(" · "),
+        parsed: it.parsed || null
+      };
+    });
+    var me = items[i];
+    onPick(me.text, me.label, me.sub, me.parsed, { items: items, index: i });
   }
 
   function init(opts) {
@@ -210,14 +219,22 @@
   // hand it to the player, which reads it once from sessionStorage on play.html?pgn=pending.
   // sub: the title line under the label (optional); checked: already parsed (the chess.com picker).
   var PENDING_KEY = "chessBeats.pendingPgn";
-  function openInPlayer(text, label, sub, checked) {
+  // playlist: { items: [{ text, label, sub }], index } from the chess.com picker (optional).
+  function openInPlayer(text, label, sub, checked, playlist) {
     if (!checked) {
       try { ChessPgn.parse(text); } catch (e) { showError(e.message); return; } // a readable message on bad input
     }
     // Keep only the first game: a big multi-game file could overflow sessionStorage.
     var first = String(text).replace(/\r\n?/g, "\n").trim().split(/\n\s*\n(?=\[Event )/)[0];
+    var pending = { text: first, label: label, sub: sub || "" };
+    var withList = playlist ? {
+      text: pending.text, label: pending.label, sub: pending.sub,
+      // parsed games don't survive JSON: the player re-parses each one when it plays
+      playlist: { index: playlist.index, items: playlist.items.map(function (it) { return { text: it.text, label: it.label, sub: it.sub }; }) }
+    } : null;
     try {
-      sessionStorage.setItem(PENDING_KEY, JSON.stringify({ text: first, label: label, sub: sub || "" }));
+      try { sessionStorage.setItem(PENDING_KEY, JSON.stringify(withList || pending)); }
+      catch (full) { if (!withList) throw full; sessionStorage.setItem(PENDING_KEY, JSON.stringify(pending)); } // too big: just this game
     } catch (e) {
       var msg = "Couldn't hand the game to the player (browser storage is unavailable).";
       if ($("panel-cc").hidden) showError(msg); else ccStatus(msg, "error");

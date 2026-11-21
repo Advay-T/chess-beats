@@ -259,7 +259,7 @@
           if (!ready) {
             LoadDialog.init({
               onText: function (t, l) { LoadDialog.openInPlayer(t, l); },
-              onPick: function (pgn, l, sub, parsed) { LoadDialog.openInPlayer(pgn, l, sub, !!parsed); }
+              onPick: function (pgn, l, sub, parsed, playlist) { LoadDialog.openInPlayer(pgn, l, sub, !!parsed, playlist); }
             });
             ready = true;
           }

@@ -276,7 +276,7 @@
     // The Load dialog (load-dialog.js): whatever is picked opens in the player.
     LoadDialog.init({
       onText: function (text, label) { LoadDialog.openInPlayer(text, label); },
-      onPick: function (pgn, label, sub, parsed) { LoadDialog.openInPlayer(pgn, label, sub, !!parsed); }
+      onPick: function (pgn, label, sub, parsed, playlist) { LoadDialog.openInPlayer(pgn, label, sub, !!parsed, playlist); }
     });
     $("btn-open-pgn").addEventListener("click", function () { stopPreview(); LoadDialog.open(); });
   }
