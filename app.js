@@ -41,8 +41,7 @@
     $("auto-root").textContent = "Auto (" + a.root.replace("b", "♭") + ")";
     $("auto-mode").textContent = "Auto (" + a.mode + ")";
     // Every game starts at 200 (chess.com bullet 250, blitz 225); the slider can still override it.
-    $("tempo").value = bpm || DEFAULT_BPM;
-    $("tempo-out").textContent = bpm || DEFAULT_BPM;
+    setTempo(bpm || DEFAULT_BPM);
     showProfile();
     renderMoveList();
     render();
@@ -338,6 +337,13 @@
     };
   }
   function bpm() { return +$("tempo").value; }
+  // Set the tempo slider, its readout and how far its track is lit.
+  function setTempo(v) {
+    var el = $("tempo");
+    el.value = v;
+    $("tempo-out").textContent = el.value;
+    el.style.setProperty("--fill", ((el.value - el.min) / (el.max - el.min)) * 100 + "%");
+  }
 
   // Apply the next move to the board and play it. Returns the event (or null at the end).
   function stepForward(withSound) {
@@ -601,7 +607,7 @@
       if (el) goTo(+el.dataset.ply);
     });
 
-    $("tempo").addEventListener("input", function (e) { $("tempo-out").textContent = e.target.value; });
+    $("tempo").addEventListener("input", function (e) { setTempo(e.target.value); });
     $("key-root").addEventListener("change", function () { if (state.game) showProfile(); });
     $("key-mode").addEventListener("change", function () { if (state.game) showProfile(); });
 

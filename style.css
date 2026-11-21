@@ -508,7 +508,116 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 .bpm-unit { font-size: var(--fs-xs); color: var(--muted); }
 .tempo input { grid-column: 1 / -1; margin-top: var(--s2); }
 input[type="range"] { width: 100%; accent-color: var(--white-voice); cursor: pointer; }
+
+/* Tempo: a slim lit track that fills to the thumb (--fill, set by app.js), and a light thumb with a
+   soft halo that grows on hover and while dragged. */
+.tempo-range {
+  --fill: 61.5%; --track: 6px; --thumb: 18px;
+  -webkit-appearance: none; appearance: none; height: 28px; margin: 0; background: transparent;
+}
+.tempo-range::-webkit-slider-runnable-track {
+  height: var(--track); border-radius: 999px;
+  background: linear-gradient(90deg, rgba(127, 211, 255, .55), var(--white-voice) var(--fill), var(--surface-3) var(--fill));
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .45);
+}
+.tempo-range::-moz-range-track { height: var(--track); border-radius: 999px; background: var(--surface-3); box-shadow: inset 0 1px 2px rgba(0, 0, 0, .45); }
+.tempo-range::-moz-range-progress { height: var(--track); border-radius: 999px; background: linear-gradient(90deg, rgba(127, 211, 255, .55), var(--white-voice)); }
+.tempo-range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: var(--thumb); height: var(--thumb); margin-top: calc((var(--track) - var(--thumb)) / 2);
+  border: 0; border-radius: 50%; background: radial-gradient(circle at 50% 35%, #ffffff, #d8e6f0);
+  box-shadow: 0 0 0 4px rgba(127, 211, 255, .16), 0 2px 6px rgba(0, 0, 0, .5);
+  transition: transform 150ms var(--ease), box-shadow 150ms var(--ease);
+}
+.tempo-range::-moz-range-thumb {
+  width: var(--thumb); height: var(--thumb); border: 0; border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #ffffff, #d8e6f0);
+  box-shadow: 0 0 0 4px rgba(127, 211, 255, .16), 0 2px 6px rgba(0, 0, 0, .5);
+  transition: transform 150ms var(--ease), box-shadow 150ms var(--ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .tempo-range:hover::-webkit-slider-thumb { box-shadow: 0 0 0 7px rgba(127, 211, 255, .2), 0 2px 8px rgba(0, 0, 0, .5); }
+  .tempo-range:hover::-moz-range-thumb { box-shadow: 0 0 0 7px rgba(127, 211, 255, .2), 0 2px 8px rgba(0, 0, 0, .5); }
+}
+.tempo-range:active::-webkit-slider-thumb { transform: scale(1.12); box-shadow: 0 0 0 9px rgba(127, 211, 255, .24), 0 2px 8px rgba(0, 0, 0, .5); }
+.tempo-range:active::-moz-range-thumb { transform: scale(1.12); box-shadow: 0 0 0 9px rgba(127, 211, 255, .24), 0 2px 8px rgba(0, 0, 0, .5); }
+.tempo-range:focus-visible { outline: none; }
+.tempo-range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--white-voice); }
+.tempo-range:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--white-voice); }
+/* The scale under it: the slider's ends and two landmarks, each set where its value sits. */
+.tempo-scale { grid-column: 1 / -1; position: relative; height: 14px; margin-top: 2px; font: 500 10px/1 var(--mono); font-stretch: 87.5%; color: var(--faint); }
+.tempo-scale span { position: absolute; top: 0; transform: translateX(-50%); }
+.tempo-scale span:nth-child(1) { left: 0; transform: none; }
+.tempo-scale span:nth-child(2) { left: calc(9px + (100% - 18px) * 80 / 260); }
+.tempo-scale span:nth-child(3) { left: calc(9px + (100% - 18px) * 160 / 260); }
+.tempo-scale span:nth-child(4) { left: auto; right: 0; transform: none; }
 .fields { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); margin-top: var(--s4); }
+
+/* Key and Scale: native selects (keyboard, screen readers and phone pickers keep working), drawn as
+   quiet fields with a chevron. Where the browser allows a styled list (appearance: base-select,
+   Chrome 135+), the open list matches too: a dark panel, a tick on the chosen option, a soft entrance. */
+.fields select {
+  -webkit-appearance: none; appearance: none;
+  height: 40px; padding: 0 36px 0 var(--s3);
+  font: 500 var(--fs-sm)/1 var(--font); color: var(--text);
+  background-color: var(--surface-2);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239b9ea9' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center; background-size: 16px;
+  border: 1px solid var(--line); border-radius: var(--r2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .03);
+  transition: border-color 150ms var(--ease), background-color 150ms var(--ease), box-shadow 150ms var(--ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .fields select:hover { border-color: var(--line-strong); background-color: var(--surface-3); }
+}
+.fields select:focus-visible { outline: none; border-color: var(--white-voice); box-shadow: 0 0 0 3px rgba(127, 211, 255, .22); }
+.fields select option { background: var(--surface-2); color: var(--text); } /* the native list, where it can be coloured */
+
+@supports (appearance: base-select) {
+  .fields select, .fields select::picker(select) { appearance: base-select; }
+  .fields select { display: flex; align-items: center; background-image: none; padding-right: var(--s3); }
+  .fields select::picker-icon {
+    content: ""; width: 16px; height: 16px; margin-left: auto; color: var(--muted);
+    background: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E") center / contain no-repeat;
+            mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E") center / contain no-repeat;
+    transition: transform 200ms var(--ease);
+  }
+  .fields select:open::picker-icon { transform: rotate(180deg); }
+  .fields select:open { border-color: var(--white-voice); }
+  .fields select::picker(select) {
+    margin-top: 6px; padding: 4px; min-width: anchor-size(width);
+    background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: var(--r2);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, .55);
+    /* Close: fade and settle back toward the field (a transition, so it can be caught mid-way);
+       the list stays in the top layer until the fade ends (overlay/display allow-discrete). */
+    opacity: 0; transform: scale(.97);
+    transition: opacity 120ms var(--ease), transform 120ms var(--ease), overlay 120ms allow-discrete, display 120ms allow-discrete;
+  }
+  /* Open: grow in from the field (keyframes play every time the list is shown). */
+  .fields select:open::picker(select) { opacity: 1; transform: none; animation: picker-in 180ms var(--ease); }
+  @keyframes picker-in { from { opacity: 0; transform: scale(.97); } }
+  /* The options follow a beat behind, top to bottom, so the list reads as unfolding. */
+  .fields select:open option { animation: option-in 180ms var(--ease) both; }
+  .fields select:open option:nth-child(2) { animation-delay: 20ms; }
+  .fields select:open option:nth-child(3) { animation-delay: 40ms; }
+  .fields select:open option:nth-child(4) { animation-delay: 60ms; }
+  .fields select:open option:nth-child(5) { animation-delay: 80ms; }
+  .fields select:open option:nth-child(6) { animation-delay: 100ms; }
+  .fields select:open option:nth-child(n+7) { animation-delay: 120ms; }
+  @keyframes option-in { from { opacity: 0; transform: translateY(-3px); } }
+  .fields select option {
+    display: flex; align-items: center; gap: var(--s2); padding: 8px 10px; border-radius: var(--r1);
+    font: 500 var(--fs-sm)/1.2 var(--font); color: var(--text); background: transparent; cursor: pointer;
+  }
+  .fields select option:hover, .fields select option:focus-visible { background: var(--surface-3); outline: none; }
+  .fields select option:checked { color: var(--white-voice); }
+  .fields select option::checkmark {
+    order: 1; margin-left: auto; content: ""; width: 14px; height: 14px; background: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / contain no-repeat;
+            mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / contain no-repeat;
+  }
+}
 
 /* MOVES */
 .game-info { font-size: var(--fs-xs); color: var(--muted); margin: calc(-1 * var(--s1)) 0 var(--s3); }
